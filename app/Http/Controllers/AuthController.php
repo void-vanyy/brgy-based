@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\PasswordPolicy;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -42,17 +43,19 @@ class AuthController extends Controller
     public function register(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:120'],
+            'name' => ['required', 'string', 'min:2', 'max:120'],
             'email' => ['required', 'email', 'max:190', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
             'phone' => ['nullable', 'string', 'max:30'],
             'purok' => ['nullable', 'string', 'max:80'],
             'address' => ['nullable', 'string', 'max:190'],
             'birth_date' => ['nullable', 'date', 'before:today'],
             'terms' => ['accepted'],
+            'password' => PasswordPolicy::requiredRules($request),
         ], [
             'terms.accepted' => 'You must accept the data privacy notice to continue.',
-        ]);
+            'name.min' => 'Please enter your full name (at least 2 characters).',
+            'birth_date.before' => 'Birth date must be in the past.',
+        ] + PasswordPolicy::messages());
 
         $user = User::create([
             'name' => trim($data['name']),

@@ -62,7 +62,7 @@ class DocumentRequestController extends Controller
 
         $documentRequest->update([
             'status' => $data['status'],
-            'remarks' => $data['remarks'] ?: null,
+            'remarks' => ($data['remarks'] ?? null) ?: null,
             'processed_by' => $request->user()?->id,
             'released_at' => $data['status'] === 'released'
                 ? ($documentRequest->released_at ?? now())

@@ -27,7 +27,7 @@ class FreedomWallController extends Controller
         FreedomPost::create([
             'user_id' => $request->user()->id,
             'message' => trim($data['message']),
-            'topic' => $data['topic'] !== null && trim($data['topic']) !== '' ? trim($data['topic']) : null,
+            'topic' => ($data['topic'] ?? null) !== null && trim($data['topic']) !== '' ? trim($data['topic']) : null,
             'is_anonymous' => true,
             'reactions' => 0,
         ]);

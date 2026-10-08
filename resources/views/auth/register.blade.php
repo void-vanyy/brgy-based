@@ -175,25 +175,37 @@
                         @enderror
                     </div>
 
-                    <div class="field">
+                    <div class="field span-2">
                         <label class="label" for="reg-password">Password <span class="req">*</span></label>
                         <input class="input" type="password" id="reg-password" name="password"
                                placeholder="At least 8 characters"
-                               minlength="8" autocomplete="new-password" required>
-                        <div class="help">
-                            Use at least 8 characters. Mix upper and lower case letters with a number
-                            and a symbol (for example <span class="mono">Sigla#2026</span>).
-                        </div>
-                        @error('password')
+                               minlength="8" maxlength="64"
+                               autocomplete="new-password" required
+                               aria-describedby="pw-meter-hint pw-meter-rules">
+
+                        {{-- live strength meter - rules mirror App\Support\PasswordPolicy --}}
+                        @include('partials.password-strength', [
+                            'pwId'      => 'reg-password',
+                            'confirmId' => 'reg-password-confirmation',
+                            'matchId'   => 'pw-match',
+                            'meterId'   => 'pw-meter',
+                            'email'     => null,
+                            'optional'  => false,
+                        ])
+
+                        @foreach ($errors->get('password') as $message)
                             <div class="error"><x-icon name="alert" size="13" /> {{ $message }}</div>
-                        @enderror
+                        @endforeach
                     </div>
 
-                    <div class="field">
+                    <div class="field span-2">
                         <label class="label" for="reg-password-confirmation">Confirm password <span class="req">*</span></label>
                         <input class="input" type="password" id="reg-password-confirmation" name="password_confirmation"
                                placeholder="Repeat your password"
-                               minlength="8" autocomplete="new-password" required>
+                               minlength="8" maxlength="64"
+                               autocomplete="new-password" required
+                               aria-describedby="pw-match">
+                        <div class="pw-match" id="pw-match" role="status" hidden></div>
                         @error('password_confirmation')
                             <div class="error"><x-icon name="alert" size="13" /> {{ $message }}</div>
                         @enderror

@@ -454,6 +454,49 @@ p:last-child { margin-bottom: 0; }
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 0 1rem; }
 .form-grid .span-2 { grid-column: 1 / -1; }
 
+/* ---------- password strength meter (registration + profile) ---------- */
+.pw-meter { --meter: var(--dim); margin-top: .65rem; }
+.pw-meter.lv1 { --meter: var(--danger); }
+.pw-meter.lv2 { --meter: #fb923c; }
+.pw-meter.lv3 { --meter: var(--warning); }
+.pw-meter.lv4 { --meter: #a3e635; }
+.pw-meter.lv5 { --meter: var(--success); }
+
+.pw-track { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+.pw-seg {
+    height: 5px; border-radius: 99px; background: var(--border-2);
+    transition: background .25s ease, box-shadow .25s ease;
+}
+.pw-seg.on { background: var(--meter); box-shadow: 0 0 9px -2px var(--meter); }
+
+.pw-meta { display: flex; justify-content: space-between; gap: .8rem; align-items: baseline; margin-top: .5rem; }
+.pw-label { font-size: .76rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--meter); transition: color .25s ease; }
+.pw-hint { font-size: .75rem; color: var(--dim); text-align: right; }
+
+.pw-rules {
+    list-style: none; margin: .7rem 0 0; padding: .65rem .8rem;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: .4rem .9rem;
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+}
+.pw-rules li {
+    display: flex; align-items: center; gap: .5rem;
+    font-size: .78rem; color: var(--dim); transition: color .2s ease;
+}
+.pw-rules li .dot {
+    width: 15px; height: 15px; flex-shrink: 0; border-radius: 50%;
+    display: grid; place-items: center;
+    border: 1px solid var(--border-2); background: var(--bg-soft);
+    transition: all .2s ease;
+}
+.pw-rules li .dot::after { content: ""; font-size: 9px; line-height: 1; font-weight: 800; }
+.pw-rules li.ok { color: var(--success); }
+.pw-rules li.ok .dot { border-color: var(--success); background: rgba(52, 211, 153, .14); }
+.pw-rules li.ok .dot::after { content: "\2713"; color: var(--success); }
+
+.pw-match { display: flex; align-items: center; gap: .35rem; font-size: .76rem; margin-top: .34rem; }
+.pw-match.no { color: var(--danger); }
+.pw-match.yes { color: var(--success); }
+
 .check { display: flex; align-items: flex-start; gap: .6rem; font-size: .85rem; color: var(--muted); cursor: pointer; }
 .check input { margin-top: .28rem; accent-color: var(--primary); width: 15px; height: 15px; flex-shrink: 0; }
 

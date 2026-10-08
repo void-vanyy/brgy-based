@@ -106,6 +106,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin,staff'])
     Route::patch('appointments/{appointment}', [Admin\AppointmentController::class, 'update'])->name('appointments.update');
 
     Route::get('queue', [Admin\QueueController::class, 'index'])->name('queue.index');
+    Route::post('queue', [Admin\QueueController::class, 'store'])->name('queue.store');
     Route::post('queue/call-next', [Admin\QueueController::class, 'callNext'])->name('queue.call-next');
     Route::patch('queue/{queueTicket}', [Admin\QueueController::class, 'update'])->name('queue.update');
     Route::post('queue/reset', [Admin\QueueController::class, 'reset'])->name('queue.reset');

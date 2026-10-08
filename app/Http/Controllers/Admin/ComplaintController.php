@@ -139,8 +139,8 @@ class ComplaintController extends Controller
         $complaint->fill([
             'status' => $data['status'],
             'priority' => $data['priority'],
-            'assigned_to' => $data['assigned_to'] ?: null,
-            'admin_remarks' => $data['admin_remarks'] ?: null,
+            'assigned_to' => ($data['assigned_to'] ?? null) ?: null,
+            'admin_remarks' => ($data['admin_remarks'] ?? null) ?: null,
         ]);
 
         /* Keep the resolution stamp on terminal states, clear it when reopened. */
@@ -160,7 +160,7 @@ class ComplaintController extends Controller
                     self::STATUSES[$previous] ?? ucfirst($previous),
                     self::STATUSES[$data['status']]
                 ),
-                'note' => $data['admin_remarks']
+                'note' => ($data['admin_remarks'] ?? null)
                     ?: 'Case status updated by '.($request->user()->name ?? 'an administrator').'.',
                 'updated_by' => $request->user()?->id,
             ]);
@@ -180,7 +180,7 @@ class ComplaintController extends Controller
 
         $complaint->updates()->create([
             'status' => $complaint->status,
-            'title' => $data['title'] ?: 'Progress note added',
+            'title' => ($data['title'] ?? null) ?: 'Progress note added',
             'note' => $data['note'],
             'updated_by' => $request->user()?->id,
         ]);

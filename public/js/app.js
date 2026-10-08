@@ -203,4 +203,198 @@
         run();
         setInterval(run, interval || 5000);
     };
+
+    /* ---------- password strength meter (registration + profile) ----------
+       Markup lives in resources/views/partials/password-strength.blade.php and
+       carries data-pw / data-confirm / data-match / data-common, so this stays
+       in one place instead of being duplicated per form. */
+    function initPasswordMeter(meter) {
+        var pw = document.getElementById(meter.getAttribute('data-pw'));
+        var confirmEl = document.getElementById(meter.getAttribute('data-confirm'));
+        var matchBox = document.getElementById(meter.getAttribute('data-match'));
+        if (!pw || !pw.form || !confirmEl) return;
+
+        var track = meter.querySelector('.pw-track');
+        var label = meter.querySelector('.pw-label');
+        var hint = meter.querySelector('.pw-hint');
+        var segments = Array.prototype.slice.call(meter.querySelectorAll('.pw-seg'));
+        var items = Array.prototype.slice.call(meter.querySelectorAll('.pw-rules li'));
+        var optional = meter.getAttribute('data-optional') === '1';
+
+        var common = [];
+        try { common = JSON.parse(meter.getAttribute('data-common') || '[]'); } catch (err) { common = []; }
+
+        /* Mirrors PasswordPolicy: same run regex, same five-or-more repeat. */
+        var RUN_RE = /(?:0123456789|abcdefghij|qwertyuiop|asdfghjkl|zxcvbnm|abcdefghijkl)/i;
+        var RE_LOWER = /\p{Ll}/u;
+        var RE_UPPER = /\p{Lu}/u;
+        var RE_DIGIT = /\p{N}/u;
+        var RE_SYMBOL = /[^\p{L}\p{N}]/u;
+
+        var LABELS = ['', 'Too weak', 'Weak', 'Fair', 'Good', 'Strong'];
+        var HINTS = {
+            len: 'Use at least 8 characters',
+            case: 'Mix upper and lower case letters',
+            num: 'Add at least one number',
+            sym: 'Add a symbol like #, ! or .',
+            orig: 'Avoid common, repeated or keyboard patterns'
+        };
+
+        var nameInput = document.querySelector('input[name="name"]');
+        var emailInput = document.querySelector('input[name="email"]');
+        var staticEmail = meter.getAttribute('data-email') || '';
+
+        function identity() {
+            var email = emailInput ? emailInput.value : staticEmail;
+            var at = email.indexOf('@');
+            return {
+                local: at > 0 ? email.slice(0, at).trim().toLowerCase() : '',
+                name: nameInput ? nameInput.value.replace(/\s+/g, '').trim().toLowerCase() : ''
+            };
+        }
+
+        function isOriginal(value, id) {
+            if (common.indexOf(value.toLowerCase()) !== -1) return false;
+            if (/(.)\1{4,}/.test(value)) return false;
+            if (RUN_RE.test(value)) return false;
+            if (id.local.length >= 3 && value.toLowerCase().indexOf(id.local) !== -1) return false;
+            if (id.name.length >= 4 && value.toLowerCase().indexOf(id.name) !== -1) return false;
+            return true;
+        }
+
+        function score(value, checks, unmet) {
+            var pts = 0;
+            if (value.length >= 8) pts += 1;
+            if (value.length >= 10) pts += 1;
+            if (value.length >= 12) pts += 1;
+            if (value.length >= 14) pts += 1;
+            if (value.length >= 16) pts += 1;
+
+            var classes = 0;
+            if (RE_LOWER.test(value)) { pts++; classes++; }
+            if (RE_UPPER.test(value)) { pts++; classes++; }
+            if (RE_DIGIT.test(value)) { pts++; classes++; }
+            if (RE_SYMBOL.test(value)) { pts++; classes++; }
+            if (classes >= 3) pts++;
+
+            var unique = new Set(value).size;
+            if (unique >= 8) pts += 1;
+            if (value.length >= 8 && unique / value.length <= 0.5) pts -= 1;
+
+            if (/(.)\1{4,}/.test(value)) pts -= 2;
+            if (RUN_RE.test(value)) pts -= 2;
+            if (!checks.orig) pts -= 3;
+
+            var level = pts <= 2 ? 1 : pts <= 4 ? 2 : pts <= 6 ? 3 : pts <= 8 ? 4 : 5;
+
+            /* Never rate above "Weak" until every requirement is ticked - otherwise
+               the bar contradicts the red crosses right underneath it. */
+            if (unmet >= 2) return 1;
+            if (unmet === 1) return Math.min(level, 2);
+            return level;
+        }
+
+        function render(level, checks) {
+            var i;
+            for (i = 0; i <= 5; i++) meter.classList.remove('lv' + i);
+            meter.classList.add('lv' + level);
+
+            for (i = 0; i < segments.length; i++) segments[i].classList.toggle('on', i < level);
+
+            if (label) label.textContent = level === 0 ? 'Password strength' : LABELS[level];
+            if (track) {
+                track.setAttribute('aria-valuenow', level);
+                track.setAttribute('aria-valuetext', level === 0 ? 'Empty' : LABELS[level]);
+            }
+            if (!hint) return;
+
+            if (!pw.value) {
+                hint.textContent = meter.getAttribute('data-blank-hint') || 'Start typing to see how strong it is';
+                return;
+            }
+
+            var firstUnmet = items.filter(function (li) {
+                return !checks[li.getAttribute('data-rule')];
+            })[0];
+
+            if (firstUnmet) hint.textContent = HINTS[firstUnmet.getAttribute('data-rule')];
+            else if (level < 5) hint.textContent = 'All requirements met - longer is still stronger';
+            else hint.textContent = 'Excellent - safe to use';
+        }
+
+        function evaluate() {
+            var value = pw.value;
+            var id = identity();
+
+            var checks = {
+                len: value.length >= 8 && value.length <= 64,
+                case: RE_LOWER.test(value) && RE_UPPER.test(value),
+                num: RE_DIGIT.test(value),
+                sym: RE_SYMBOL.test(value),
+                orig: value.length > 0 && isOriginal(value, id)
+            };
+
+            var unmet = 0;
+            items.forEach(function (li) {
+                var ok = !!checks[li.getAttribute('data-rule')];
+                li.classList.toggle('ok', ok);
+                if (!ok) unmet++;
+            });
+
+            render(value ? score(value, checks, unmet) : 0, checks);
+        }
+
+        function renderMatch() {
+            if (!matchBox) return;
+            if (!confirmEl.value) {
+                matchBox.hidden = true;
+                matchBox.classList.remove('yes', 'no');
+                matchBox.textContent = '';
+                return;
+            }
+            var ok = confirmEl.value === pw.value;
+            matchBox.hidden = false;
+            matchBox.classList.toggle('yes', ok);
+            matchBox.classList.toggle('no', !ok);
+            matchBox.textContent = ok ? 'Passwords match.' : 'Passwords do not match yet.';
+        }
+
+        pw.addEventListener('input', function () { evaluate(); renderMatch(); });
+        confirmEl.addEventListener('input', renderMatch);
+
+        /* Re-check when the resident edits the details a password must not contain. */
+        if (nameInput) nameInput.addEventListener('input', evaluate);
+        if (emailInput) emailInput.addEventListener('input', evaluate);
+
+        /* Only block what the server would reject anyway. */
+        pw.form.addEventListener('submit', function (e) {
+            if (optional && !pw.value && !confirmEl.value) return;
+
+            var failed = items.filter(function (li) { return !li.classList.contains('ok'); })[0];
+            if (failed) {
+                e.preventDefault();
+                pw.focus();
+                evaluate();
+                return;
+            }
+            if (confirmEl.value !== pw.value) {
+                e.preventDefault();
+                (confirmEl.value ? confirmEl : pw).focus();
+                renderMatch();
+            }
+        });
+
+        evaluate();
+        renderMatch();
+    }
+
+    function bootPasswordMeters() {
+        document.querySelectorAll('.js-pw-meter').forEach(initPasswordMeter);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootPasswordMeters);
+    } else {
+        bootPasswordMeters();
+    }
 })();

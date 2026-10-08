@@ -15,28 +15,8 @@ class QueueController extends Controller
     /** The single display board on the wall plus the per-window counters. */
     public const WINDOWS = ['Window 1', 'Window 2', 'Window 3', 'Window 4'];
 
-    public function index(Request $request): View
+    public function index(): View
     {
-        /* Walk-in registration posted from the control board (no dedicated store route). */
-        if ($request->isMethod('get') && $request->filled('walkin_name')) {
-            $data = $request->validate([
-                'walkin_name' => ['required', 'string', 'max:120'],
-                'walkin_service' => ['required', Rule::in(array_keys(QueueTicket::SERVICES))],
-            ]);
-
-            $ticket = QueueTicket::create([
-                'ticket_no' => QueueTicket::nextNumber(today()->toDateString()),
-                'name_on_ticket' => trim($data['walkin_name']),
-                'service' => $data['walkin_service'],
-                'status' => 'waiting',
-                'queue_date' => today()->toDateString(),
-            ]);
-
-            return redirect()
-                ->route('admin.queue.index')
-                ->with('success', $ticket->ticket_no.' was issued to '.$ticket->name_on_ticket.'.');
-        }
-
         $nowServing = QueueTicket::forDate()
             ->whereIn('status', ['called', 'serving'])
             ->orderByDesc('called_at')
@@ -74,6 +54,27 @@ class QueueController extends Controller
         ]);
     }
 
+    /** Issue a ticket for a resident who walks up to the counter. */
+    public function store(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'walkin_name' => ['required', 'string', 'max:120'],
+            'walkin_service' => ['required', Rule::in(array_keys(QueueTicket::SERVICES))],
+        ]);
+
+        $ticket = QueueTicket::create([
+            'ticket_no' => QueueTicket::nextNumber(today()->toDateString()),
+            'name_on_ticket' => trim($data['walkin_name']),
+            'service' => $data['walkin_service'],
+            'status' => 'waiting',
+            'queue_date' => today()->toDateString(),
+        ]);
+
+        return redirect()
+            ->route('admin.queue.index')
+            ->with('success', $ticket->ticket_no.' was issued to '.$ticket->name_on_ticket.'.');
+    }
+
     /** Pull the oldest waiting ticket, announce it, and return the fresh board state. */
     public function callNext(Request $request): JsonResponse
     {
@@ -95,7 +96,8 @@ class QueueController extends Controller
         $ticket->update([
             'status' => 'called',
             'called_at' => $ticket->called_at ?? now(),
-            'window' => $data['window'] ?: 'Window 1',
+            /* 'window' is nullable, so the key is absent from $data when not posted. */
+            'window' => ($data['window'] ?? null) ?: 'Window 1',
         ]);
 
         $waitingCount = QueueTicket::forDate()->where('status', 'waiting')->count();

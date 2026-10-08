@@ -244,7 +244,8 @@
                 <span class="badge badge-violet">Counter</span>
             </div>
 
-            <form method="GET" action="{{ route('admin.queue.index') }}">
+            <form method="POST" action="{{ route('admin.queue.store') }}">
+                @csrf
                 <div class="card-body">
                     <p class="small muted">
                         For residents who arrive without a phone — issue a ticket right at the desk and

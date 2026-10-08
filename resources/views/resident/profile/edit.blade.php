@@ -104,20 +104,39 @@
                 </div>
                 <div class="card-body">
                     <div class="form-grid">
-                        <div class="field">
+                        <div class="field span-2">
                             <label class="label" for="password">New password</label>
                             <input class="input" id="password" name="password" type="password"
-                                   autocomplete="new-password" placeholder="Leave blank to keep current">
-                            <div class="help">Minimum 8 characters.</div>
-                            @error('password')
+                                   minlength="8" maxlength="64"
+                                   autocomplete="new-password" placeholder="Leave blank to keep current"
+                                   aria-describedby="profile-pw-meter-hint profile-pw-meter-rules">
+
+                            {{-- Same policy and meter as registration - App\Support\PasswordPolicy --}}
+                            @include('partials.password-strength', [
+                                'pwId'      => 'password',
+                                'confirmId' => 'password_confirmation',
+                                'matchId'   => 'pw-match',
+                                'meterId'   => 'profile-pw-meter',
+                                'email'     => $user->email,
+                                'optional'  => true,
+                                'blankHint' => 'Leave blank to keep your current password',
+                            ])
+
+                            @foreach ($errors->get('password') as $message)
                                 <div class="error"><x-icon name="alert" size="13" /> {{ $message }}</div>
-                            @enderror
+                            @endforeach
                         </div>
 
-                        <div class="field">
+                        <div class="field span-2">
                             <label class="label" for="password_confirmation">Confirm new password</label>
                             <input class="input" id="password_confirmation" name="password_confirmation" type="password"
-                                   autocomplete="new-password" placeholder="Repeat the new password">
+                                   minlength="8" maxlength="64"
+                                   autocomplete="new-password" placeholder="Repeat the new password"
+                                   aria-describedby="pw-match">
+                            <div class="pw-match" id="pw-match" role="status" hidden></div>
+                            @error('password_confirmation')
+                                <div class="error"><x-icon name="alert" size="13" /> {{ $message }}</div>
+                            @enderror
                         </div>
                     </div>
                 </div>

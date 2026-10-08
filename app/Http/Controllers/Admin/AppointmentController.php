@@ -63,7 +63,7 @@ class AppointmentController extends Controller
 
         $appointment->update([
             'status' => $data['status'],
-            'remarks' => $data['remarks'] ?: null,
+            'remarks' => ($data['remarks'] ?? null) ?: null,
             'processed_by' => $request->user()?->id,
         ]);
 
