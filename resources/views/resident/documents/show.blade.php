@@ -84,7 +84,7 @@
                     <div class="detail-list">
                         <div class="d"><dt>Document</dt><dd>{{ $document->typeName() }}</dd></div>
                         <div class="d"><dt>Purpose</dt><dd>{{ $document->purpose }}</dd></div>
-                        <div class="d"><dt>Copies</dt><dd>{{ $document->copies }}</dd></div>
+                        <div class="d"><dt>Copies</dt><dd>{{ $document->copies }} — {{ $document->feeBreakdown() }}</dd></div>
                         <div class="d"><dt>Fee due</dt><dd class="mono">₱{{ number_format((float) $document->fee, 2) }}</dd></div>
                         <div class="d"><dt>Filed</dt><dd>{{ $document->created_at->format('M d, Y · h:i A') }}</dd></div>
                         <div class="d"><dt>Processed by</dt><dd>{{ $document->processor?->name ?? 'Awaiting assignment' }}</dd></div>

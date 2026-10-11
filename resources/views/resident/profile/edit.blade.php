@@ -106,10 +106,13 @@
                     <div class="form-grid">
                         <div class="field span-2">
                             <label class="label" for="password">New password</label>
-                            <input class="input" id="password" name="password" type="password"
-                                   minlength="8" maxlength="64"
-                                   autocomplete="new-password" placeholder="Leave blank to keep current"
-                                   aria-describedby="profile-pw-meter-hint profile-pw-meter-rules">
+                            <div class="pw-wrap">
+                                <input class="input" id="password" name="password" type="password"
+                                       minlength="8" maxlength="64"
+                                       autocomplete="new-password" placeholder="Leave blank to keep current"
+                                       aria-describedby="profile-pw-meter-hint profile-pw-meter-rules">
+                                @include('partials.password-toggle', ['for' => 'password', 'what' => 'new password'])
+                            </div>
 
                             {{-- Same policy and meter as registration - App\Support\PasswordPolicy --}}
                             @include('partials.password-strength', [
@@ -129,10 +132,13 @@
 
                         <div class="field span-2">
                             <label class="label" for="password_confirmation">Confirm new password</label>
-                            <input class="input" id="password_confirmation" name="password_confirmation" type="password"
-                                   minlength="8" maxlength="64"
-                                   autocomplete="new-password" placeholder="Repeat the new password"
-                                   aria-describedby="pw-match">
+                            <div class="pw-wrap">
+                                <input class="input" id="password_confirmation" name="password_confirmation" type="password"
+                                       minlength="8" maxlength="64"
+                                       autocomplete="new-password" placeholder="Repeat the new password"
+                                       aria-describedby="pw-match">
+                                @include('partials.password-toggle', ['for' => 'password_confirmation', 'what' => 'password confirmation'])
+                            </div>
                             <div class="pw-match" id="pw-match" role="status" hidden></div>
                             @error('password_confirmation')
                                 <div class="error"><x-icon name="alert" size="13" /> {{ $message }}</div>

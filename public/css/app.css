@@ -448,6 +448,36 @@ p:last-child { margin-bottom: 0; }
 .input-group .input { border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
 .input-group .btn { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
 
+/* ---------- password show/hide toggle ----------
+   Markup: resources/views/partials/password-toggle.blade.php
+   Wired by initPasswordToggles() in public/js/app.js. */
+.pw-wrap { position: relative; }
+.pw-wrap .input { padding-right: 2.5rem; }
+.pw-toggle {
+    position: absolute;
+    right: .3rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--dim);
+    cursor: pointer;
+    transition: .15s ease;
+}
+.pw-toggle:hover { color: var(--text); background: rgba(147, 161, 189, .12); }
+.pw-toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+.pw-toggle.is-on { color: var(--primary); }
+.pw-toggle .pw-i-hide { display: none; }
+.pw-toggle.is-on .pw-i-show { display: none; }
+.pw-toggle.is-on .pw-i-hide { display: block; }
+
 .help { font-size: .75rem; color: var(--dim); margin-top: .32rem; }
 .error { font-size: .76rem; color: var(--danger); margin-top: .34rem; display: flex; align-items: center; gap: .3rem; }
 

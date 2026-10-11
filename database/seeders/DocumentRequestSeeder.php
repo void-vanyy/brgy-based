@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\DocumentRequest;
 use App\Models\User;
+use App\Support\DocumentFee;
 use Illuminate\Database\Seeder;
 
 class DocumentRequestSeeder extends Seeder
@@ -30,7 +31,6 @@ class DocumentRequestSeeder extends Seeder
                 'doc_type'     => 'barangay_clearance',
                 'purpose'      => 'Local employment requirement for a customer service post in the city.',
                 'copies'       => 2,
-                'fee'          => 50,
                 'status'       => 'released',
                 'remarks'      => 'Claimed at Window 2. ID photocopy attached to the transaction record.',
                 'processed_by' => $staff,
@@ -43,9 +43,8 @@ class DocumentRequestSeeder extends Seeder
                 'doc_type'     => 'certificate_of_residency',
                 'purpose'      => 'Proof of residence for a scholarship application at the city hall.',
                 'copies'       => 1,
-                'fee'          => 30,
                 'status'       => 'ready_for_release',
-                'remarks'      => 'Signed by the Punong Barangay. Ready for pickup — resident advised by SMS.',
+                'remarks'      => 'Signed by the Punong Barangay. Ready for pickup â€” resident advised by SMS.',
                 'processed_by' => $staff,
                 'released_at'  => null,
                 'at'           => now()->subDays(4),
@@ -56,7 +55,6 @@ class DocumentRequestSeeder extends Seeder
                 'doc_type'     => 'certificate_of_indigency',
                 'purpose'      => 'Supporting document for medical assistance at the city hospital social service.',
                 'copies'       => 1,
-                'fee'          => 30,
                 'status'       => 'approved',
                 'remarks'      => 'Approved pending release; purok captain validation completed.',
                 'processed_by' => $staff,
@@ -69,9 +67,8 @@ class DocumentRequestSeeder extends Seeder
                 'doc_type'     => 'business_permit_endorsement',
                 'purpose'      => 'Endorsement for a home-based sari-sari store permit renewal.',
                 'copies'       => 2,
-                'fee'          => 50,
                 'status'       => 'under_review',
-                'remarks'      => 'Checking the barangay clearance record and the applicant’s tax reference.',
+                'remarks'      => 'Checking the barangay clearance record and the applicantâ€™s tax reference.',
                 'processed_by' => $staff,
                 'released_at'  => null,
                 'at'           => now()->subDays(2),
@@ -82,7 +79,6 @@ class DocumentRequestSeeder extends Seeder
                 'doc_type'     => 'barangay_id_application',
                 'purpose'      => 'New barangay ID after transferring from another district.',
                 'copies'       => 1,
-                'fee'          => 30,
                 'status'       => 'pending',
                 'remarks'      => 'Awaiting 1x1 photo and proof of residency from the applicant.',
                 'processed_by' => null,
@@ -95,7 +91,6 @@ class DocumentRequestSeeder extends Seeder
                 'doc_type'     => 'certificate_of_good_moral',
                 'purpose'      => 'Requirement for a school transfer credential.',
                 'copies'       => 1,
-                'fee'          => 30,
                 'status'       => 'rejected',
                 'remarks'      => 'Rejected: an open complaint record must be resolved first. Resident may reapply once the case is closed.',
                 'processed_by' => $staff,
@@ -108,7 +103,6 @@ class DocumentRequestSeeder extends Seeder
                 'doc_type'     => 'certificate_of_solo_parent',
                 'purpose'      => 'Requirement for the city solo parent welfare benefit.',
                 'copies'       => 3,
-                'fee'          => 30,
                 'status'       => 'released',
                 'remarks'      => 'Released with the DSWD referral letter attached.',
                 'processed_by' => $staff,
@@ -121,7 +115,6 @@ class DocumentRequestSeeder extends Seeder
                 'doc_type'     => 'certificate_of_no_income',
                 'purpose'      => 'Supporting document for educational financial assistance.',
                 'copies'       => 1,
-                'fee'          => 30,
                 'status'       => 'pending',
                 'remarks'      => 'Queued for assessment at the records counter.',
                 'processed_by' => null,
@@ -139,7 +132,10 @@ class DocumentRequestSeeder extends Seeder
                 $row
             );
 
+            // Always recompute the fee from the schedule so seeded rows can
+            // never disagree with what the app charges at runtime.
             $document->forceFill([
+                'fee' => DocumentFee::calculate($row['doc_type'], (int) $row['copies']),
                 'created_at' => $at,
                 'updated_at' => $document->released_at ?? $at,
             ])->save();

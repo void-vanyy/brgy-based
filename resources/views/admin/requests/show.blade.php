@@ -59,7 +59,7 @@
                         </div>
                         <div class="d"><dt>Document type</dt><dd>{{ $docRequest->typeName() }}</dd></div>
                         <div class="d"><dt>Purpose</dt><dd style="text-align:right">{{ $docRequest->purpose }}</dd></div>
-                        <div class="d"><dt>Copies</dt><dd>{{ $docRequest->copies }}</dd></div>
+                        <div class="d"><dt>Copies</dt><dd>{{ $docRequest->copies }} — {{ $docRequest->feeBreakdown() }}</dd></div>
                         <div class="d"><dt>Processing fee</dt><dd>₱ {{ number_format((float) $docRequest->fee, 2) }}</dd></div>
                         <div class="d"><dt>Filed</dt><dd>{{ $docRequest->created_at->format('M j, Y g:i A') }}</dd></div>
                         <div class="d"><dt>Released</dt><dd>{{ $docRequest->released_at?->format('M j, Y g:i A') ?? '—' }}</dd></div>

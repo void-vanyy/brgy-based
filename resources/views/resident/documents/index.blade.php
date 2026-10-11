@@ -75,7 +75,10 @@
                                 </td>
                                 <td>{{ \Illuminate\Support\Str::limit($item->purpose, 46) }}</td>
                                 <td class="mono">{{ $item->copies }}</td>
-                                <td class="mono nowrap">₱{{ number_format((float) $item->fee, 2) }}</td>
+                                <td class="mono nowrap">
+                                    ₱{{ number_format((float) $item->fee, 2) }}
+                                    <div class="tiny dim">{{ $item->feeBreakdown() }}</div>
+                                </td>
                                 <td><span class="badge {{ $badge($item->status) }}">{{ $item->statusLabel() }}</span></td>
                                 <td class="right">
                                     <a href="{{ route('resident.documents.show', $item) }}" class="btn btn-sm">

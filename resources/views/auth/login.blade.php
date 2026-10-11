@@ -133,8 +133,11 @@
                     <label class="label" for="login-password">Password <span class="req">*</span></label>
                     <div class="field-icon">
                         <x-icon name="lock" size="15" />
-                        <input class="input" type="password" id="login-password" name="password"
-                               placeholder="Your password" autocomplete="current-password" required>
+                        <div class="pw-wrap">
+                            <input class="input" type="password" id="login-password" name="password"
+                                   placeholder="Your password" autocomplete="current-password" required>
+                            @include('partials.password-toggle', ['for' => 'login-password', 'what' => 'password'])
+                        </div>
                     </div>
                     @error('password')
                         <div class="error"><x-icon name="alert" size="13" /> {{ $message }}</div>
@@ -151,7 +154,14 @@
                 </button>
             </form>
 
-            {{-- demo credentials --}}
+            {{-- Demo credentials — local environments only.
+
+                 These ship real credentials in the page source and auto-fill
+                 them into the form, which is fine for a localhost demo but must
+                 never reach a deployed instance. Gating on APP_ENV keeps them
+                 available for testing and grading while removing them entirely
+                 from any production build. --}}
+            @if (config('app.env') === 'local')
             <div class="demo-box">
                 <div class="row items-center" style="gap:.45rem;margin-top:0">
                     <x-icon name="info" size="14" />
@@ -175,6 +185,7 @@
                     <button type="button" class="btn btn-ghost btn-sm" data-fill-email="maria.santos@residents.ph">Use</button>
                 </div>
             </div>
+            @endif
 
             <div class="auth-switch">
                 Don&rsquo;t have an account?
@@ -195,7 +206,9 @@
     <div data-flash="{{ $errors->first() }}" data-flash-type="error" hidden></div>
 @endif
 
+@if (config('app.env') === 'local')
 <script>
+    /* Demo credential helper — local builds only; see the demo box above. */
     document.querySelectorAll('[data-fill-email]').forEach(function (button) {
         button.addEventListener('click', function () {
             var email = button.getAttribute('data-fill-email');
@@ -210,6 +223,7 @@
         });
     });
 </script>
+@endif
 
 <div id="toasts"></div>
 </body>

@@ -103,8 +103,11 @@
                                     <div class="tiny dim">{{ $doc->resident?->purok ?: '—' }}</div>
                                 </td>
                                 <td class="nowrap">
-                                    {{ $doc->copies }} ×
-                                    <div class="tiny dim">₱ {{ number_format((float) $doc->fee, 2) }}</div>
+                                    {{ $doc->copies }} cop{{ (int) $doc->copies === 1 ? 'y' : 'ies' }}
+                                    <div class="tiny dim">
+                                        ₱ {{ number_format((float) $doc->fee, 2) }}
+                                        &middot; {{ $doc->feeBreakdown() }}
+                                    </div>
                                 </td>
                                 <td>
                                     <span class="badge {{ $statusBadge[$doc->status] ?? 'badge-neutral' }}">{{ $doc->statusLabel() }}</span>

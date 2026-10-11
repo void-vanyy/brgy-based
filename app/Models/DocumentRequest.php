@@ -70,4 +70,15 @@ class DocumentRequest extends Model
     {
         return self::STATUSES[$this->status] ?? ucfirst($this->status);
     }
+
+    /**
+     * Human breakdown of what this request costs, e.g. "₱50.00 + 2 × ₱20.00".
+     *
+     * Derived from the stored copy count rather than the stored fee so the
+     * label always explains the number next to it.
+     */
+    public function feeBreakdown(): string
+    {
+        return \App\Support\DocumentFee::breakdown($this->doc_type, (int) $this->copies);
+    }
 }

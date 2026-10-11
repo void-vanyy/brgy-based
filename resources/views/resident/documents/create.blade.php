@@ -69,6 +69,7 @@
                     <div class="field">
                         <label class="label">Estimated fee</label>
                         <div class="input mono" id="feePreview" aria-live="polite">₱30.00</div>
+                        <div class="help" id="feeMath">Choose a document to see the fee.</div>
                         <div class="help">Paid at the barangay hall upon claiming.</div>
                     </div>
                 </div>
@@ -101,10 +102,18 @@
                     <h2 class="card-title"><x-icon name="database" /> Fee schedule</h2>
                 </div>
                 <div class="card-body">
+                    <p class="small muted" style="margin-top:0">
+                        First copy at the base rate, each additional copy at the surcharge.
+                    </p>
                     <div class="detail-list">
-                        <div class="d"><dt>Barangay Clearance</dt><dd class="mono">₱50.00</dd></div>
-                        <div class="d"><dt>Business Permit Endorsement</dt><dd class="mono">₱50.00</dd></div>
-                        <div class="d"><dt>All other certificates</dt><dd class="mono">₱30.00</dd></div>
+                        @foreach ($feeSchedule as $type => $rate)
+                            <div class="d">
+                                <dt>{{ $types[$type] ?? $type }}</dt>
+                                <dd class="mono nowrap">
+                                    ₱{{ number_format($rate['base'], 2) }} + ₱{{ number_format($rate['extra'], 2) }}/extra
+                                </dd>
+                            </div>
+                        @endforeach
                     </div>
                 </div>
             </div>
@@ -129,17 +138,38 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        var select = document.getElementById('doc_type');
+        var typeEl = document.getElementById('doc_type');
+        var copiesEl = document.getElementById('copies');
         var preview = document.getElementById('feePreview');
-        if (!select || !preview) return;
+        var math = document.getElementById('feeMath');
+        if (!typeEl || !copiesEl || !preview) return;
 
-        var fee50 = @json(['barangay_clearance', 'business_permit_endorsement']);
+        /* Same table the controller charges from — App\Support\DocumentFee. */
+        var schedule = @json($feeSchedule);
 
         var refresh = function () {
-            preview.textContent = '₱' + (fee50.indexOf(select.value) !== -1 ? '50.00' : '30.00');
+            var rate = schedule[typeEl.value];
+            var copies = Math.max(1, parseInt(copiesEl.value, 10) || 1);
+
+            if (!rate) {
+                preview.textContent = '₱30.00';
+                if (math) math.textContent = 'Choose a document to see the fee.';
+                return;
+            }
+
+            var total = rate.base + ((copies - 1) * rate.extra);
+            preview.textContent = '₱' + total.toFixed(2);
+
+            if (math) {
+                math.textContent = copies === 1
+                    ? '₱' + rate.base.toFixed(2) + ' for the first copy'
+                    : '₱' + rate.base.toFixed(2) + ' first copy + '
+                        + (copies - 1) + ' additional × ₱' + rate.extra.toFixed(2);
+            }
         };
 
-        select.addEventListener('change', refresh);
+        typeEl.addEventListener('change', refresh);
+        copiesEl.addEventListener('change', refresh);
         refresh();
     });
 </script>

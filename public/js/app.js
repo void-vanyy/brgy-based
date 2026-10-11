@@ -392,9 +392,65 @@
         document.querySelectorAll('.js-pw-meter').forEach(initPasswordMeter);
     }
 
+    /* ---------- password show/hide toggle ----------
+       Markup: resources/views/partials/password-toggle.blade.php
+       Every [data-pw-toggle="<input id>"] flips that input between
+       type=password and type=text. The caret is preserved across the switch,
+       and the input is re-masked on submit so plaintext never lingers in the
+       DOM once the form has been sent. */
+    function initPasswordToggle(btn) {
+        var input = document.getElementById(btn.getAttribute('data-pw-toggle'));
+        if (!input) return;
+
+        var what = btn.getAttribute('data-what') || 'password';
+        var showLabel = 'Show ' + what;
+        var hideLabel = 'Hide ' + what;
+
+        /* Both eye icons ship in the partial; CSS swaps them off the is-on class. */
+        function paint(shown) {
+            btn.setAttribute('aria-pressed', shown ? 'true' : 'false');
+            btn.setAttribute('aria-label', shown ? hideLabel : showLabel);
+            btn.setAttribute('title', shown ? hideLabel : showLabel);
+            btn.classList.toggle('is-on', shown);
+        }
+
+        btn.addEventListener('click', function () {
+            var shown = input.type === 'text';
+            var start = input.selectionStart;
+            var end = input.selectionEnd;
+            var hadFocus = document.activeElement === input;
+
+            input.type = shown ? 'password' : 'text';
+            paint(!shown);
+
+            if (hadFocus && start !== null && start !== undefined) {
+                try { input.setSelectionRange(start, end); } catch (e) { /* type=text only */ }
+            }
+        });
+
+        /* Never leave the value visible after submit. */
+        var form = input.form;
+        if (form) {
+            form.addEventListener('submit', function () {
+                if (input.type === 'text') {
+                    input.type = 'password';
+                    paint(false);
+                }
+            });
+        }
+    }
+
+    function bootPasswordToggles() {
+        document.querySelectorAll('[data-pw-toggle]').forEach(initPasswordToggle);
+    }
+
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', bootPasswordMeters);
+        document.addEventListener('DOMContentLoaded', function () {
+            bootPasswordMeters();
+            bootPasswordToggles();
+        });
     } else {
         bootPasswordMeters();
+        bootPasswordToggles();
     }
 })();

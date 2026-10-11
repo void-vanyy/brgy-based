@@ -20,5 +20,17 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo(fn () => route('login'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->renderable(function (Throwable $e) {
+            if (! \App\Support\DbOutage::isConnectionFailure($e)) {
+                return null; // not an outage — let Laravel handle it normally
+            }
+
+            // The database is unreachable. Report 503 rather than 500 so
+            // browsers and uptime checks treat it as transient and stop
+            // caching a hard failure, and render a page that explains what
+            // is happening instead of leaking a stack trace.
+            return response()->view('errors.unavailable', [
+                'reason' => config('app.debug') ? $e->getMessage() : null,
+            ], 503)->header('Retry-After', '30');
+        });
     })->create();
