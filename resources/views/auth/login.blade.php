@@ -166,12 +166,20 @@
                 <div class="row items-center" style="gap:.45rem;margin-top:0">
                     <x-icon name="info" size="14" />
                     <strong style="color:var(--text)">Demo accounts</strong>
-                    <span class="tiny dim">both use <code>password</code></span>
+                    <span class="tiny dim">all use <code>password</code></span>
                 </div>
 
                 <div class="demo-row">
                     <span>
-                        <span class="who">Barangay official</span>
+                        <span class="who">City admin &mdash; all 18 barangays</span>
+                        <code>city.admin@barangay.gov</code>
+                    </span>
+                    <button type="button" class="btn btn-ghost btn-sm" data-fill-email="city.admin@barangay.gov">Use</button>
+                </div>
+
+                <div class="demo-row">
+                    <span>
+                        <span class="who">Barangay official &mdash; Tagapo only</span>
                         <code>admin@barangay.gov</code>
                     </span>
                     <button type="button" class="btn btn-ghost btn-sm" data-fill-email="admin@barangay.gov">Use</button>
@@ -179,7 +187,7 @@
 
                 <div class="demo-row">
                     <span>
-                        <span class="who">Resident</span>
+                        <span class="who">Resident &mdash; Kanluran</span>
                         <code>maria.santos@residents.ph</code>
                     </span>
                     <button type="button" class="btn btn-ghost btn-sm" data-fill-email="maria.santos@residents.ph">Use</button>
