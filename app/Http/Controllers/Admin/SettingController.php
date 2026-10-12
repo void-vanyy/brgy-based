@@ -35,7 +35,7 @@ class SettingController extends Controller
         'barangay_name' => [
             'label' => 'City / office name',
             'hint' => 'Shown in the brand mark, page titles and printed documents.',
-            'placeholder' => 'Santa Rosa City — e-Services',
+            'placeholder' => 'Santa Rosa City',
         ],
         'barangay_address' => [
             'label' => 'Office address',

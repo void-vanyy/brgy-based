@@ -26,7 +26,7 @@ class PasswordPolicy
         'monkey123', 'dragon123', 'sunshine1', 'princess1', 'football1', 'superman1',
         'trustno1!', 'batman123', 'master123', 'michael1', 'shadow123', 'starwars1',
         'superhero', 'changeme1', 'secret123', 'test1234!', 'demo1234!', 'sample123',
-        'january2026', 'february1', 'barangay1', 'sigla2026!', 'sigla1234', 'kwentoso1',
+        'january2026', 'february1', 'barangay1', 'santarosa2026!', 'santarosa1234', 'santrosa1', 'kwentoso1',
     ];
 
     /**

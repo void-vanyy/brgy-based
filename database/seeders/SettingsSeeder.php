@@ -17,7 +17,9 @@ class SettingsSeeder extends Seeder
     public function run(): void
     {
         $settings = [
-            'barangay_name'    => 'Santa Rosa City — e-Services',
+            // No "e-Services" suffix here: home.blade.php and features.blade.php
+            // both append it themselves, so a suffixed value reads twice over.
+            'barangay_name'    => 'Santa Rosa City',
             'barangay_address' => 'City Hall Complex, Rizal Boulevard, Poblacion, Santa Rosa City, Laguna 4026',
             'barangay_contact' => '(049) 534-3000 / eservices@santrosacity.gov.ph',
             'barangay_capain'  => 'Hon. Celeste A. Ocampo, City Administrator',
