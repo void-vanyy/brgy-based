@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Barangay;
 use App\Models\Complaint;
 use App\Models\ComplaintUpdate;
 use App\Models\User;
@@ -27,9 +28,35 @@ class ComplaintSeeder extends Seeder
         $admin = User::query()->where('role', 'admin')->value('id');
         $staff = User::query()->where('role', 'staff')->value('id');
 
+        $byId = $residents->keyBy('id');
+
         foreach ($this->rows($residents, $admin, $staff) as $row) {
             $story = $row['story'];
             unset($row['story']);
+
+            // Every complaint belongs to the complainant's barangay. The map
+            // point becomes that barangay's centre nudged slightly, so markers
+            // in one barangay do not stack on a single pixel. The hard-coded
+            // coordinates in rows() pointed at a place that does not exist, so
+            // they are discarded here rather than edited row by row — rows that
+            // had no coordinate still have none.
+            $author   = $byId->get((int) $row['user_id']);
+            $barangay = $author?->barangay_id;
+
+            if ($barangay === null && $row['user_id'] === $admin) {
+                $barangay = User::query()->whereKey($admin)->value('barangay_id');
+            }
+
+            $row['barangay_id'] = $barangay;
+
+            if ($row['latitude'] !== null) {
+                $centre = Barangay::query()->find($barangay);
+
+                if ($centre !== null) {
+                    $row['latitude']  = round($centre->latitude + mt_rand(-45, 45) / 10000, 6);
+                    $row['longitude'] = round($centre->longitude + mt_rand(-45, 45) / 10000, 6);
+                }
+            }
 
             $complaint = Complaint::query()->firstOrCreate(
                 ['reference_no' => $row['reference_no']],
@@ -189,7 +216,7 @@ class ComplaintSeeder extends Seeder
             ],
             [
                 'reference_no'  => 'CMP-0007',
-                'user_id'       => $resident(0),
+                'user_id'       => $resident(6),
                 'title'         => 'Uneven road shoulder causing falls',
                 'description'   => 'The shoulder of the road dropped about half a foot after the pipe repair. Bikes and tricycles trip on it, and a senior resident already fell last week.',
                 'category'      => 'infrastructure',
@@ -208,7 +235,7 @@ class ComplaintSeeder extends Seeder
             ],
             [
                 'reference_no'  => 'CMP-0008',
-                'user_id'       => $resident(1),
+                'user_id'       => $resident(7),
                 'title'         => 'No water pressure between 6 and 8 AM',
                 'description'   => 'For the past week there is no pressure in our line during the morning peak. We have to fetch water from the barangay station before going to work.',
                 'category'      => 'other',
@@ -227,7 +254,7 @@ class ComplaintSeeder extends Seeder
             ],
             [
                 'reference_no'  => 'CMP-0009',
-                'user_id'       => $resident(2),
+                'user_id'       => $resident(8),
                 'title'         => 'Unpermitted garbage burning at the vacant lot',
                 'description'   => 'Someone burns household trash at the vacant lot almost every night. The smoke enters our windows and it is dangerous for my asthmatic father.',
                 'category'      => 'sanitation',
@@ -247,7 +274,7 @@ class ComplaintSeeder extends Seeder
             ],
             [
                 'reference_no'  => 'CMP-0010',
-                'user_id'       => $resident(3),
+                'user_id'       => $resident(9),
                 'title'         => 'Altercation near the covered court',
                 'description'   => 'Two groups had a shouting match after the basketball game and bottles were thrown near the bleachers where children were standing.',
                 'category'      => 'peace_and_order',

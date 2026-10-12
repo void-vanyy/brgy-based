@@ -42,6 +42,21 @@
                 <div class="topbar-title">@yield('topbar-title', 'Dashboard')</div>
             </div>
 
+            {{-- An official should never have to guess whose records are on
+                 screen, so the scope travels with them on every page. --}}
+            @if ($portal === 'admin')
+                @php
+                    $scopeIsCity = auth()->user()->isCityAdmin();
+                    $scopeName = $scopeIsCity
+                        ? 'All 18 barangays'
+                        : (auth()->user()->barangay?->name ?? 'Unassigned barangay');
+                @endphp
+                <span class="badge {{ $scopeIsCity ? 'badge-violet' : 'badge-blue' }} shrink-0"
+                      title="Every list on this console is limited to {{ $scopeName }}">
+                    {{ $scopeName }}
+                </span>
+            @endif
+
             @hasSection('topbar-actions')
                 <div class="row shrink-0">@yield('topbar-actions')</div>
             @endif

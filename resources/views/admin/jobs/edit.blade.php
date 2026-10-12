@@ -47,7 +47,7 @@
                         <div class="field">
                             <label class="label" for="company">Employer / company <span class="req">*</span></label>
                             <input id="company" type="text" name="company" class="input" maxlength="140"
-                                placeholder="e.g. Sigla Builders" value="{{ old('company', $job->company) }}">
+                                placeholder="e.g. Santa Rosa Builders" value="{{ old('company', $job->company) }}">
                             @error('company')<div class="error">{{ $message }}</div>@enderror
                         </div>
 

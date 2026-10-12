@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\ScopesAdminQueries;
 use App\Http\Controllers\Controller;
 use App\Models\Announcement;
 use Illuminate\Http\RedirectResponse;
@@ -10,6 +11,8 @@ use Illuminate\View\View;
 
 class AnnouncementController extends Controller
 {
+    use ScopesAdminQueries;
+
     /** Kept in sync with the categories documented in the announcements migration. */
     public const CATEGORIES = [
         'information' => 'Information',
@@ -22,7 +25,7 @@ class AnnouncementController extends Controller
 
     public function index(Request $request): View
     {
-        $query = Announcement::query()->with('creator:id,name');
+        $query = $this->scopedVisible(Announcement::query())->with('creator:id,name');
 
         if ($request->filled('q')) {
             $term = trim($request->string('q')->toString());
@@ -40,11 +43,16 @@ class AnnouncementController extends Controller
 
         $announcements = $query->orderByDesc('is_pinned')->latest()->get();
 
+        $publishedCount = $this->scopedVisible(Announcement::query())->where('is_published', true)->count();
+        $draftCount = $this->scopedVisible(Announcement::query())->where('is_published', false)->count();
+        $pinnedCount = $this->scopedVisible(Announcement::query())->where('is_pinned', true)->count();
+
         return view('admin.announcements.index', [
             'announcements' => $announcements,
-            'publishedCount' => Announcement::where('is_published', true)->count(),
-            'draftCount' => Announcement::where('is_published', false)->count(),
-            'pinnedCount' => Announcement::where('is_pinned', true)->count(),
+            'publishedCount' => $publishedCount,
+            'draftCount' => $draftCount,
+            'pinnedCount' => $pinnedCount,
+            'scopeLabel' => $this->scopeLabel(),
         ]);
     }
 
@@ -63,6 +71,9 @@ class AnnouncementController extends Controller
             'is_published' => $request->boolean('is_published'),
             'published_at' => $request->boolean('is_published') ? now() : null,
             'created_by' => $request->user()?->id,
+            // A notice composed by a barangay official belongs to that
+            // barangay; one composed by the city admin is published city-wide.
+            'barangay_id' => $this->scopeBarangayId(),
         ]);
 
         return redirect()
@@ -72,11 +83,15 @@ class AnnouncementController extends Controller
 
     public function edit(Announcement $announcement): View
     {
+        $this->guardInScope($announcement);
+
         return view('admin.announcements.edit', ['announcement' => $announcement]);
     }
 
     public function update(Request $request, Announcement $announcement): RedirectResponse
     {
+        $this->guardInScope($announcement);
+
         $data = $this->validated($request);
 
         $published = $request->boolean('is_published');
@@ -95,6 +110,8 @@ class AnnouncementController extends Controller
 
     public function destroy(Announcement $announcement): RedirectResponse
     {
+        $this->guardInScope($announcement);
+
         $title = $announcement->title;
         $announcement->delete();
 
@@ -106,7 +123,23 @@ class AnnouncementController extends Controller
     /** Public-facing rendering used to check the card before publishing. */
     public function preview(Announcement $announcement): View
     {
+        $this->guardInScope($announcement);
+
         return view('admin.announcements.preview', ['announcement' => $announcement]);
+    }
+
+    /**
+     * A barangay official edits only their own barangay's notices. A notice
+     * with a null barangay_id was published city-wide and belongs to the city
+     * office, so it is deliberately not editable from a barangay screen.
+     */
+    private function guardInScope(Announcement $announcement): void
+    {
+        $id = $this->scopeBarangayId();
+
+        if ($id !== null && $announcement->barangay_id !== $id) {
+            abort(404);
+        }
     }
 
     private function validated(Request $request): array

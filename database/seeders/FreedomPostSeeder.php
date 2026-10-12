@@ -23,18 +23,23 @@ class FreedomPostSeeder extends Seeder
             ['topic' => 'suggestion', 'reactions' => 42, 'message' => 'Suggestion: can we have a "senior citizen hour" at the barangay hall every Monday morning? My lola waits two hours for her clearance because the counter gets crowded after 9 AM.'],
             ['topic' => 'concern',   'reactions' => 31, 'message' => 'The lights along the footbridge to the market have been out since last month. It is really dark when we come home from the night shift — please check.'],
             ['topic' => 'praise',    'reactions' => 57, 'message' => 'Shout out to the tanod team who helped push our tricycle out of the flood last night and brought us home. Maraming salamat po!'],
-            ['topic' => 'shoutout',  'reactions' => 26, 'message' => 'Congratulations to Purok 3 for winning the Sigla Cup! Best game this year, and thank you to everyone who sold snacks for the youth league.'],
+            ['topic' => 'shoutout',  'reactions' => 26, 'message' => 'Congratulations to Purok 3 for winning the barangay cup! Best game this year, and thank you to everyone who sold snacks for the youth league.'],
             ['topic' => 'suggestion', 'reactions' => 19, 'message' => 'Can the recycling collection schedule be posted on the announcements page? We only find out from the tarpaulin when the truck is already outside.'],
             ['topic' => 'concern',   'reactions' => 35, 'message' => 'Water pressure drops every morning from 6 to 8 AM in Zone 2. Several households already filed complaints — any update from the water district?'],
             ['topic' => 'praise',    'reactions' => 48, 'message' => 'Thank you for the free medical mission last quarter. My father had his blood pressure checked and the dentists were very kind to the kids.'],
-            ['topic' => 'shoutout',  'reactions' => 23, 'message' => 'To whoever returned the wallet near the covered court yesterday — the barangay is lucky to have honest residents. Keep it up, Sigla!'],
+            ['topic' => 'shoutout',  'reactions' => 23, 'message' => 'To whoever returned the wallet near the covered court yesterday — the barangay is lucky to have honest residents. Keep it up, Santa Rosa!'],
         ];
 
         foreach ($posts as $index => $post) {
+            $author = $residents[$index % $residents->count()];
+
+            // Each post lands on its author's own barangay wall — a wall never
+            // shows another barangay's posts.
             FreedomPost::query()->firstOrCreate(
                 ['message' => $post['message']],
                 [
-                    'user_id'      => $residents[$index % $residents->count()]->id,
+                    'user_id'      => $author->id,
+                    'barangay_id'  => $author->barangay_id,
                     'topic'        => $post['topic'],
                     'is_anonymous' => true,
                     'reactions'    => $post['reactions'],

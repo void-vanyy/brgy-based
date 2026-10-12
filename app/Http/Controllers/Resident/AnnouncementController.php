@@ -13,7 +13,11 @@ class AnnouncementController extends Controller
     {
         $category = (string) $request->query('category', '');
 
+        // Barangay notices plus anything published city-wide (null barangay).
+        $barangayId = $request->user()->barangay_id;
+
         $categories = Announcement::published()
+            ->visibleToBarangay($barangayId)
             ->whereNotNull('category')
             ->where('category', '<>', '')
             ->distinct()
@@ -25,7 +29,7 @@ class AnnouncementController extends Controller
             $category = '';
         }
 
-        $query = Announcement::published();
+        $query = Announcement::published()->visibleToBarangay($barangayId);
 
         if ($category !== '') {
             $query->where('category', $category);

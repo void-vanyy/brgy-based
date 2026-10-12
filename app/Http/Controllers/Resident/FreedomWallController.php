@@ -10,10 +10,14 @@ use Illuminate\View\View;
 
 class FreedomWallController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
+        // Each barangay has its own wall — a post never crosses barangay lines.
         return view('resident.freedom-wall.index', [
-            'posts' => FreedomPost::with('author')->latest()->paginate(10),
+            'posts' => FreedomPost::with('author')
+                ->forBarangay($request->user()->barangay_id)
+                ->latest()
+                ->paginate(10),
         ]);
     }
 
@@ -26,6 +30,7 @@ class FreedomWallController extends Controller
 
         FreedomPost::create([
             'user_id' => $request->user()->id,
+            'barangay_id' => $request->user()->barangay_id,
             'message' => trim($data['message']),
             'topic' => ($data['topic'] ?? null) !== null && trim($data['topic']) !== '' ? trim($data['topic']) : null,
             'is_anonymous' => true,

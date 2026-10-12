@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\ScopesAdminQueries;
 use App\Http\Controllers\Controller;
 use App\Models\DocumentRequest;
 use Illuminate\Http\RedirectResponse;
@@ -11,9 +12,12 @@ use Illuminate\View\View;
 
 class DocumentRequestController extends Controller
 {
+    use ScopesAdminQueries;
+
     public function index(Request $request): View
     {
-        $query = DocumentRequest::query()->with(['resident:id,name,email,avatar,purok', 'processor:id,name']);
+        $query = $this->scopedByResident(DocumentRequest::query())
+            ->with(['resident:id,name,email,avatar,purok', 'processor:id,name']);
 
         if (in_array($request->input('status'), array_keys(DocumentRequest::STATUSES), true)) {
             $query->where('status', $request->input('status'));
@@ -30,7 +34,7 @@ class DocumentRequestController extends Controller
 
         $requests = $query->latest()->paginate(12)->withQueryString();
 
-        $counts = DocumentRequest::query()
+        $counts = $this->scopedByResident(DocumentRequest::query())
             ->select('status', \Illuminate\Support\Facades\DB::raw('COUNT(*) as total'))
             ->groupBy('status')
             ->pluck('total', 'status');
@@ -39,11 +43,14 @@ class DocumentRequestController extends Controller
             'requests' => $requests,
             'counts' => $counts,
             'statuses' => DocumentRequest::STATUSES,
+            'scopeLabel' => $this->scopeLabel(),
         ]);
     }
 
     public function show(DocumentRequest $documentRequest): View
     {
+        $this->guardInScope($documentRequest);
+
         $documentRequest->load(['resident:id,name,email,phone,purok,address,avatar', 'processor:id,name']);
 
         return view('admin.requests.show', [
@@ -55,6 +62,8 @@ class DocumentRequestController extends Controller
 
     public function update(Request $request, DocumentRequest $documentRequest): RedirectResponse
     {
+        $this->guardInScope($documentRequest);
+
         $data = $request->validate([
             'status' => ['required', Rule::in(array_keys(DocumentRequest::STATUSES))],
             'remarks' => ['nullable', 'string', 'max:4000'],
@@ -72,5 +81,18 @@ class DocumentRequestController extends Controller
         return redirect()
             ->route('admin.requests.show', $documentRequest)
             ->with('success', $documentRequest->reference_no.' is now "'.$documentRequest->statusLabel().'".');
+    }
+
+    /**
+     * Document requests carry no barangay_id of their own — the resident who
+     * filed them already does — so the check runs through that resident.
+     */
+    private function guardInScope(DocumentRequest $documentRequest): void
+    {
+        $id = $this->scopeBarangayId();
+
+        if ($id !== null && $documentRequest->resident?->barangay_id !== $id) {
+            abort(404);
+        }
     }
 }

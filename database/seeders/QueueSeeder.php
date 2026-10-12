@@ -10,8 +10,9 @@ use Illuminate\Database\Seeder;
 class QueueSeeder extends Seeder
 {
     /**
-     * Twelve tickets for today: four already served, one being served, one
-     * freshly called at Window 1 and six still waiting in line.
+     * Fourteen tickets for today: four already served, one being served, one
+     * freshly called at Window 1, six still waiting in line, and two walk-ins
+     * issued at the Tagapo counter with no owning account.
      *
      * Ticket numbers follow QueueTicket::nextNumber() formatting (A-001 …).
      */
@@ -22,6 +23,8 @@ class QueueSeeder extends Seeder
         if ($residents->isEmpty()) {
             return; // UserSeeder must run first.
         }
+
+        $staff = User::query()->where('role', 'staff')->first();
 
         $today = Carbon::today();
 
@@ -36,17 +39,37 @@ class QueueSeeder extends Seeder
             ['ticket_no' => 'A-008', 'name' => $residents[2]->name, 'user_id' => $residents[2]->id, 'service' => 'general',         'window' => null,       'status' => 'waiting', 'called_at' => null, 'served_at' => null],
             ['ticket_no' => 'A-009', 'name' => $residents[1]->name, 'user_id' => $residents[1]->id, 'service' => 'document_request','window' => null,       'status' => 'waiting', 'called_at' => null, 'served_at' => null],
             ['ticket_no' => 'A-010', 'name' => $residents[3]->name, 'user_id' => $residents[3]->id, 'service' => 'consultation',    'window' => null,       'status' => 'waiting', 'called_at' => null, 'served_at' => null],
-            ['ticket_no' => 'A-011', 'name' => $residents[5]->name, 'user_id' => $residents[5]->id, 'service' => 'complaint',       'window' => null,       'status' => 'waiting', 'called_at' => null, 'served_at' => null],
-            ['ticket_no' => 'A-012', 'name' => $residents[4]->name, 'user_id' => $residents[4]->id, 'service' => 'general',         'window' => null,       'status' => 'waiting', 'called_at' => null, 'served_at' => null],
+            ['ticket_no' => 'A-011', 'name' => $residents[9]->name, 'user_id' => $residents[9]->id, 'service' => 'complaint',       'window' => null,       'status' => 'waiting', 'called_at' => null, 'served_at' => null],
+            ['ticket_no' => 'A-012', 'name' => $residents[8]->name, 'user_id' => $residents[8]->id, 'service' => 'general',         'window' => null,       'status' => 'waiting', 'called_at' => null, 'served_at' => null],
+        ];
+
+        $byId = $residents->keyBy('id');
+
+        // Two extra walk-ins with no owning account, issued at the Tagapo
+        // counter — the case the barangay_id column exists to cover.
+        $rows[] = [
+            'ticket_no' => 'A-013', 'name' => 'Walk-in resident', 'user_id' => null, 'service' => 'general',
+            'window' => null, 'status' => 'waiting', 'called_at' => null, 'served_at' => null, 'walkin' => true,
+        ];
+        $rows[] = [
+            'ticket_no' => 'A-014', 'name' => 'Rogelio Dizon', 'user_id' => null, 'service' => 'payment',
+            'window' => null, 'status' => 'called', 'called_at' => now()->subMinutes(2), 'served_at' => null, 'walkin' => true,
         ];
 
         foreach ($rows as $index => $row) {
             $takenAt = now()->subMinutes(160 - ($index * 10));
+            $walkin = $row['walkin'] ?? false;
+            unset($row['walkin']);
 
             $ticket = QueueTicket::query()->firstOrCreate(
                 ['queue_date' => $today->toDateString(), 'ticket_no' => $row['ticket_no']],
                 [
                     'user_id'        => $row['user_id'],
+                    // Resident tickets take their author's barangay; a walk-in
+                    // takes the barangay of the counter that issued it.
+                    'barangay_id'    => $walkin
+                        ? $staff?->barangay_id
+                        : $byId->get($row['user_id'])?->barangay_id,
                     'name_on_ticket' => $row['name'],
                     'service'        => $row['service'],
                     'window'         => $row['window'],

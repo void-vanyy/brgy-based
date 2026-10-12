@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            BarangaySeeder::class,   // must run first — every other seeder picks a barangay
             SettingsSeeder::class,
             UserSeeder::class,
             AnnouncementSeeder::class,

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\ScopesAdminQueries;
 use App\Http\Controllers\Controller;
 use App\Models\Announcement;
 use App\Models\Complaint;
@@ -15,10 +16,12 @@ use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
+    use ScopesAdminQueries;
+
     public function index(): View
     {
         /* ---- complaint breakdown for the bar chart ---- */
-        $statusTotals = Complaint::query()
+        $statusTotals = $this->scoped(Complaint::query())
             ->select('status', DB::raw('COUNT(*) as total'))
             ->groupBy('status')
             ->pluck('total', 'status');
@@ -43,34 +46,43 @@ class DashboardController extends Controller
         ];
 
         /* ---- headline numbers ---- */
-        $openComplaints = Complaint::whereIn('status', ['received', 'in_progress', 'on_hold'])->count();
-        $pendingDocs = DocumentRequest::whereIn('status', ['pending', 'under_review'])->count();
-        $pendingAppts = Appointment::where('status', 'pending')->count();
-        $waiting = QueueTicket::forDate()->where('status', 'waiting')->count();
-        $residents = User::where('role', 'resident')->count();
-        $openJobs = Job::where('status', 'open')->count();
+        $openComplaints = $this->scoped(Complaint::query())
+            ->whereIn('status', ['received', 'in_progress', 'on_hold'])
+            ->count();
+        $pendingDocs = $this->scopedByResident(DocumentRequest::query())
+            ->whereIn('status', ['pending', 'under_review'])
+            ->count();
+        $pendingAppts = $this->scopedByResident(Appointment::query())
+            ->where('status', 'pending')
+            ->count();
+
+        $todayQueue = $this->scopedByResident(QueueTicket::forDate());
+        $waiting = (clone $todayQueue)->where('status', 'waiting')->count();
+        $residents = $this->scopedUsers(User::query())->where('role', 'resident')->count();
+        $openJobs = $this->scopedVisible(Job::query())->where('status', 'open')->count();
 
         /* ---- today's queue snapshot ---- */
-        $nowServing = QueueTicket::forDate()
+        $nowServing = (clone $todayQueue)
             ->whereIn('status', ['called', 'serving'])
             ->orderByDesc('called_at')
             ->first();
-        $servedToday = QueueTicket::forDate()->where('status', 'done')->count();
-        $skippedToday = QueueTicket::forDate()->whereIn('status', ['skipped', 'no_show'])->count();
-        $queueLine = QueueTicket::forDate()->where('status', 'waiting')->orderBy('id')->take(3)->get();
+        $servedToday = (clone $todayQueue)->where('status', 'done')->count();
+        $skippedToday = (clone $todayQueue)->whereIn('status', ['skipped', 'no_show'])->count();
+        $queueLine = (clone $todayQueue)->where('status', 'waiting')->orderBy('id')->take(3)->get();
 
         /* ---- recent activity ---- */
-        $latestComplaints = Complaint::with(['resident:id,name,purok', 'assignee:id,name'])
+        $latestComplaints = $this->scoped(Complaint::query())
+            ->with(['resident:id,name,purok', 'assignee:id,name'])
             ->latest()
             ->take(5)
             ->get();
 
-        $announcements = Announcement::query()->published()
+        $announcements = $this->scopedVisible(Announcement::query()->published())
             ->with('creator:id,name')
             ->take(4)
             ->get();
 
-        $urgent = Complaint::where('priority', 'urgent')
+        $urgent = $this->scoped(Complaint::query())->where('priority', 'urgent')
             ->whereIn('status', ['received', 'in_progress', 'on_hold'])
             ->count();
 
@@ -78,6 +90,7 @@ class DashboardController extends Controller
             'bars' => $bars,
             'peakBar' => $peakBar,
             'total' => $total,
+            'scopeLabel' => $this->scopeLabel(),
             'stats' => [
                 [
                     'label' => 'Open complaints',

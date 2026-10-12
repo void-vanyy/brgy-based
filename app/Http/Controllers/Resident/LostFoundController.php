@@ -20,7 +20,10 @@ class LostFoundController extends Controller
 
         $q = trim((string) $request->query('q', ''));
 
-        $query = LostFound::latest();
+        // Barangay reports plus anything filed city-wide (null barangay).
+        $barangayId = $request->user()->barangay_id;
+
+        $query = LostFound::visibleToBarangay($barangayId)->latest();
 
         if ($status !== '') {
             $query->where('status', $status);
@@ -41,9 +44,9 @@ class LostFoundController extends Controller
             'status' => $status,
             'q' => $q,
             'counts' => [
-                'all' => LostFound::count(),
-                'lost' => LostFound::where('status', 'lost')->count(),
-                'found' => LostFound::where('status', 'found')->count(),
+                'all' => LostFound::visibleToBarangay($barangayId)->count(),
+                'lost' => LostFound::visibleToBarangay($barangayId)->where('status', 'lost')->count(),
+                'found' => LostFound::visibleToBarangay($barangayId)->where('status', 'found')->count(),
             ],
         ]);
     }

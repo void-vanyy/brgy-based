@@ -84,7 +84,7 @@ Route::prefix('resident')->name('resident.')->middleware(['auth', 'role:resident
 |--------------------------------------------------------------------------
 */
 
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin,staff'])->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin,staff,city_admin'])->group(function () {
     Route::get('/', [Admin\DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('complaints', [Admin\ComplaintController::class, 'index'])->name('complaints.index');

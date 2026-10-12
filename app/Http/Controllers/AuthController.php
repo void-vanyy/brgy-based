@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Barangay;
 use App\Models\User;
 use App\Support\PasswordPolicy;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -37,7 +39,9 @@ class AuthController extends Controller
 
     public function showRegister(): View
     {
-        return view('auth.register');
+        return view('auth.register', [
+            'barangays' => Barangay::query()->active()->ordered()->get(),
+        ]);
     }
 
     public function register(Request $request): RedirectResponse
@@ -45,6 +49,11 @@ class AuthController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'min:2', 'max:120'],
             'email' => ['required', 'email', 'max:190', 'unique:users,email'],
+            'barangay_id' => [
+                'required',
+                'integer',
+                Rule::exists('barangays', 'id')->where('is_active', true),
+            ],
             'phone' => ['nullable', 'string', 'max:30'],
             'purok' => ['nullable', 'string', 'max:80'],
             'address' => ['nullable', 'string', 'max:190'],
@@ -55,6 +64,8 @@ class AuthController extends Controller
             'terms.accepted' => 'You must accept the data privacy notice to continue.',
             'name.min' => 'Please enter your full name (at least 2 characters).',
             'birth_date.before' => 'Birth date must be in the past.',
+            'barangay_id.required' => 'Please choose the barangay you live in.',
+            'barangay_id.exists' => 'That barangay is not part of this city.',
         ] + PasswordPolicy::messages());
 
         $user = User::create([
@@ -62,6 +73,7 @@ class AuthController extends Controller
             'email' => strtolower(trim($data['email'])),
             'password' => $data['password'],
             'role' => 'resident',
+            'barangay_id' => (int) $data['barangay_id'],
             'phone' => $data['phone'] ?? null,
             'purok' => $data['purok'] ?? null,
             'address' => $data['address'] ?? null,

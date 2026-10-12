@@ -150,6 +150,25 @@
                         @enderror
                     </div>
 
+                    <div class="field span-2">
+                        <label class="label" for="reg-barangay">Barangay <span class="req">*</span></label>
+                        <select class="select" id="reg-barangay" name="barangay_id" required
+                                aria-describedby="reg-barangay-help">
+                            <option value="">Choose your barangay…</option>
+                            @foreach ($barangays as $barangay)
+                                <option value="{{ $barangay->id }}" @selected((string) old('barangay_id') === (string) $barangay->id)>
+                                    {{ $barangay->label }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <div class="help" id="reg-barangay-help">
+                            Complaints, announcements and job listings are shown for your barangay only.
+                        </div>
+                        @error('barangay_id')
+                            <div class="error"><x-icon name="alert" size="13" /> {{ $message }}</div>
+                        @enderror
+                    </div>
+
                     <div class="field">
                         <label class="label" for="reg-purok">Purok</label>
                         <select class="select" id="reg-purok" name="purok">

@@ -106,10 +106,10 @@ class AppointmentSeeder extends Seeder
             ],
             [
                 'reference_no'    => 'APT-0007',
-                'user_id'         => $residents[0]->id,
+                'user_id'         => $residents[7]->id,
                 'subject'         => 'Youth leadership program briefing',
                 'office'          => 'SK Office',
-                'purpose'         => 'Orientation for volunteers joining the Sigla youth scholarship rollout.',
+                'purpose'         => 'Orientation for volunteers joining the Santa Rosa youth scholarship rollout.',
                 'appointment_date' => now()->addDays(5)->toDateString(),
                 'time_slot'       => $slots[0],
                 'status'          => 'pending',
@@ -119,7 +119,7 @@ class AppointmentSeeder extends Seeder
             ],
             [
                 'reference_no'    => 'APT-0008',
-                'user_id'         => $residents[2]->id,
+                'user_id'         => $residents[10]->id,
                 'subject'         => 'Dental mission pre-registration',
                 'office'          => 'Barangay Health Center',
                 'purpose'         => 'Reserve a slot for the free dental extraction drive next week.',

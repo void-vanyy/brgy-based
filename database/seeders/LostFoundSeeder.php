@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Barangay;
 use App\Models\LostFound;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -10,7 +11,20 @@ class LostFoundSeeder extends Seeder
 {
     /**
      * Eight lost & found postings — three lost, four found, one already claimed.
+     *
+     * Items lost somewhere specific belong to that barangay; items handed in at
+     * a central desk (the city plaza, the city hall clinic) are posted city-wide
+     * so anyone in Santa Rosa can recognise and claim them.
      */
+    private const BARANGAYS = [
+        'Black iPhone 12 with a navy blue case' => 'Kanluran',
+        'Silver keychain with a tricycle charm' => 'Pooc',
+        'Blue JanSport backpack with school supplies' => 'Pulong Santa Cruz',
+        'Gold-plated pendant with a photo locket' => 'Macabling',
+        'White Shih Tzu named Bambi' => 'Sinalhan',
+        // The rest were handed in centrally and stay city-wide (null).
+    ];
+
     public function run(): void
     {
         $residents = User::query()->where('role', 'resident')->orderBy('id')->get();
@@ -18,6 +32,8 @@ class LostFoundSeeder extends Seeder
         if ($residents->isEmpty()) {
             return; // UserSeeder must run first.
         }
+
+        $ids = Barangay::query()->pluck('id', 'name');
 
         $rows = [
             [
@@ -69,7 +85,7 @@ class LostFoundSeeder extends Seeder
                 'category'      => 'documents',
                 'description'   => 'Identification card of a grade 9 student, picked up near the elementary school gate. Returned to the barangay hall for safekeeping.',
                 'status'        => 'found',
-                'location'      => 'Sigla Elementary School gate',
+                'location'      => 'Santa Rosa Central Elementary School gate',
                 'date_occurred' => now()->subDays(4)->toDateString(),
                 'contact_info'  => '(02) 8536-1188 — Barangay Hall',
                 'reported_by'   => $residents[3]->id,
@@ -114,7 +130,18 @@ class LostFoundSeeder extends Seeder
             $at = $row['at'];
             unset($row['at']);
 
-            $entry = LostFound::query()->firstOrCreate(['item_name' => $row['item_name']], $row);
+            $barangay = self::BARANGAYS[$row['item_name']] ?? null;
+
+            if ($barangay !== null && ! isset($ids[$barangay])) {
+                $this->command?->error("Unknown barangay for lost-found {$row['item_name']}: {$barangay}");
+
+                continue;
+            }
+
+            $entry = LostFound::query()->firstOrCreate(
+                ['item_name' => $row['item_name']],
+                $row + ['barangay_id' => $barangay !== null ? $ids[$barangay] : null]
+            );
 
             $entry->forceFill(['created_at' => $at, 'updated_at' => $at])->save();
         }

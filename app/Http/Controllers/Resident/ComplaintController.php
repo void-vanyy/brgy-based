@@ -109,6 +109,7 @@ class ComplaintController extends Controller
         $complaint = Complaint::create([
             'reference_no' => 'CMP-'.str_pad((string) (Complaint::max('id') + 1), 4, '0', STR_PAD_LEFT),
             'user_id' => $request->user()->id,
+            'barangay_id' => $request->user()->barangay_id,
             'title' => trim($data['title']),
             'description' => trim($data['description']),
             'category' => $data['category'],

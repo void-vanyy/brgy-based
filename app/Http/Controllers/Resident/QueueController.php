@@ -58,6 +58,9 @@ class QueueController extends Controller
         $ticket = QueueTicket::create([
             'ticket_no' => QueueTicket::nextNumber(today()->toDateString()),
             'user_id' => $request->user()->id,
+            // Duplicated from the resident on purpose: the admin board filters
+            // on a single column, and a walk-in slip has no user_id to join on.
+            'barangay_id' => $request->user()->barangay_id,
             'name_on_ticket' => $request->user()->name,
             'service' => $data['service'],
             'status' => 'waiting',

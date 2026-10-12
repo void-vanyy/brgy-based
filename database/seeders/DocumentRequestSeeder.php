@@ -99,7 +99,7 @@ class DocumentRequestSeeder extends Seeder
             ],
             [
                 'reference_no' => 'DOC-0007',
-                'user_id'      => $residents[0]->id,
+                'user_id'      => $residents[6]->id,
                 'doc_type'     => 'certificate_of_solo_parent',
                 'purpose'      => 'Requirement for the city solo parent welfare benefit.',
                 'copies'       => 3,
@@ -111,7 +111,7 @@ class DocumentRequestSeeder extends Seeder
             ],
             [
                 'reference_no' => 'DOC-0008',
-                'user_id'      => $residents[2]->id,
+                'user_id'      => $residents[9]->id,
                 'doc_type'     => 'certificate_of_no_income',
                 'purpose'      => 'Supporting document for educational financial assistance.',
                 'copies'       => 1,

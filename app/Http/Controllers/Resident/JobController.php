@@ -23,6 +23,7 @@ class JobController extends Controller
         }
 
         $query = Job::where('status', 'open')
+            ->visibleToBarangay($request->user()->barangay_id)
             ->orderByDesc('is_featured')
             ->latest();
 

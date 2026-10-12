@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\ScopesAdminQueries;
 use App\Http\Controllers\Controller;
 use App\Models\LostFound;
 use Illuminate\Http\RedirectResponse;
@@ -11,9 +12,11 @@ use Illuminate\View\View;
 
 class LostFoundController extends Controller
 {
+    use ScopesAdminQueries;
+
     public function index(Request $request): View
     {
-        $query = LostFound::query()->with('reporter:id,name');
+        $query = $this->scopedVisible(LostFound::query())->with('reporter:id,name');
 
         if (in_array($request->input('status'), array_keys(LostFound::STATUSES), true)) {
             $query->where('status', $request->input('status'));
@@ -29,15 +32,16 @@ class LostFoundController extends Controller
         $items = $query->latest()->get();
 
         $counts = [
-            'all' => LostFound::count(),
-            'lost' => LostFound::where('status', 'lost')->count(),
-            'found' => LostFound::where('status', 'found')->count(),
-            'claimed' => LostFound::where('status', 'claimed')->count(),
+            'all' => $this->scopedVisible(LostFound::query())->count(),
+            'lost' => $this->scopedVisible(LostFound::query())->where('status', 'lost')->count(),
+            'found' => $this->scopedVisible(LostFound::query())->where('status', 'found')->count(),
+            'claimed' => $this->scopedVisible(LostFound::query())->where('status', 'claimed')->count(),
         ];
 
         return view('admin.lost-found.index', [
             'items' => $items,
             'counts' => $counts,
+            'scopeLabel' => $this->scopeLabel(),
             'active' => in_array($request->input('status'), array_keys(LostFound::STATUSES), true)
                 ? $request->input('status')
                 : 'all',
@@ -56,6 +60,7 @@ class LostFoundController extends Controller
         LostFound::create([
             ...$data,
             'reported_by' => $request->user()?->id,
+            'barangay_id' => $this->scopeBarangayId(),
         ]);
 
         return redirect()
@@ -65,11 +70,15 @@ class LostFoundController extends Controller
 
     public function edit(LostFound $lostFound): View
     {
+        $this->guardInScope($lostFound);
+
         return view('admin.lost-found.edit', ['item' => $lostFound]);
     }
 
     public function update(Request $request, LostFound $lostFound): RedirectResponse
     {
+        $this->guardInScope($lostFound);
+
         $lostFound->update($this->validated($request));
 
         return redirect()
@@ -79,6 +88,8 @@ class LostFoundController extends Controller
 
     public function destroy(LostFound $lostFound): RedirectResponse
     {
+        $this->guardInScope($lostFound);
+
         $name = $lostFound->item_name;
         $lostFound->delete();
 
@@ -90,6 +101,8 @@ class LostFoundController extends Controller
     /** Quick status switch from the board (lost / found / claimed). */
     public function status(Request $request, LostFound $lostFound): RedirectResponse
     {
+        $this->guardInScope($lostFound);
+
         $data = $request->validate([
             'status' => ['required', Rule::in(array_keys(LostFound::STATUSES))],
         ]);
@@ -99,6 +112,20 @@ class LostFoundController extends Controller
         return redirect()
             ->route('admin.lost-found.index', ['status' => $data['status']])
             ->with('success', '"'.$lostFound->item_name.'" is now marked as '.LostFound::STATUSES[$data['status']].'.');
+    }
+
+    /**
+     * Same rule as announcements: a barangay board shows the city-wide items
+     * but only the city office may change them, so anything outside this
+     * official's own barangay is invisible to the route.
+     */
+    private function guardInScope(LostFound $lostFound): void
+    {
+        $id = $this->scopeBarangayId();
+
+        if ($id !== null && $lostFound->barangay_id !== $id) {
+            abort(404);
+        }
     }
 
     private function validated(Request $request): array

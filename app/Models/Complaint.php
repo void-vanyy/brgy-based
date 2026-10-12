@@ -11,6 +11,7 @@ class Complaint extends Model
     protected $fillable = [
         'reference_no',
         'user_id',
+        'barangay_id',
         'title',
         'description',
         'category',
@@ -42,6 +43,16 @@ class Complaint extends Model
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    /**
+     * The barangay that filed the complaint. A complaint filed before the
+     * city-wide rollout can have a null barangay_id, so callers that display
+     * it should fall back to the complainant's own barangay.
+     */
+    public function barangay(): BelongsTo
+    {
+        return $this->belongsTo(Barangay::class);
     }
 
     public function updates(): HasMany

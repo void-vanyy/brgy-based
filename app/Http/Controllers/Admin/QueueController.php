@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\ScopesAdminQueries;
 use App\Http\Controllers\Controller;
 use App\Models\QueueTicket;
 use Illuminate\Http\JsonResponse;
@@ -12,22 +13,26 @@ use Illuminate\View\View;
 
 class QueueController extends Controller
 {
+    use ScopesAdminQueries;
+
     /** The single display board on the wall plus the per-window counters. */
     public const WINDOWS = ['Window 1', 'Window 2', 'Window 3', 'Window 4'];
 
     public function index(): View
     {
-        $nowServing = QueueTicket::forDate()
+        $today = $this->scoped(QueueTicket::forDate());
+
+        $nowServing = (clone $today)
             ->whereIn('status', ['called', 'serving'])
             ->orderByDesc('called_at')
             ->first();
 
-        $waiting = QueueTicket::forDate()->where('status', 'waiting')->orderBy('id')->get();
-        $active = QueueTicket::forDate()
+        $waiting = (clone $today)->where('status', 'waiting')->orderBy('id')->get();
+        $active = (clone $today)
             ->whereIn('status', ['called', 'serving'])
             ->orderByDesc('called_at')
             ->get();
-        $finished = QueueTicket::forDate()
+        $finished = (clone $today)
             ->whereIn('status', ['done', 'skipped', 'no_show'])
             ->orderByDesc('served_at')
             ->orderByDesc('id')
@@ -41,6 +46,7 @@ class QueueController extends Controller
             'windows' => self::WINDOWS,
             'services' => QueueTicket::SERVICES,
             'statuses' => QueueTicket::STATUSES,
+            'scopeLabel' => $this->scopeLabel(),
             'badge' => [
                 'waiting' => 'badge-cyan',
                 'called' => 'badge-amber',
@@ -68,6 +74,9 @@ class QueueController extends Controller
             'service' => $data['walkin_service'],
             'status' => 'waiting',
             'queue_date' => today()->toDateString(),
+            // A walk-in has no owning resident, so the issuing official's own
+            // barangay is what puts the slip on the right board.
+            'barangay_id' => $this->scopeBarangayId(),
         ]);
 
         return redirect()
@@ -82,7 +91,7 @@ class QueueController extends Controller
             'window' => ['nullable', 'string', 'max:40'],
         ]);
 
-        $ticket = QueueTicket::forDate()
+        $ticket = $this->scoped(QueueTicket::forDate())
             ->where('status', 'waiting')
             ->orderBy('id')
             ->first();
@@ -100,7 +109,7 @@ class QueueController extends Controller
             'window' => ($data['window'] ?? null) ?: 'Window 1',
         ]);
 
-        $waitingCount = QueueTicket::forDate()->where('status', 'waiting')->count();
+        $waitingCount = $this->scoped(QueueTicket::forDate())->where('status', 'waiting')->count();
 
         $payload = $ticket->fresh()->toArray();
         $payload['service_name'] = $ticket->serviceName();
@@ -116,6 +125,8 @@ class QueueController extends Controller
 
     public function update(Request $request, QueueTicket $queueTicket): RedirectResponse|JsonResponse
     {
+        $this->guardInScope($queueTicket);
+
         $data = $request->validate([
             'status' => ['required', Rule::in(['called', 'serving', 'done', 'skipped', 'no_show'])],
             'window' => ['nullable', 'string', 'max:40'],
@@ -140,7 +151,7 @@ class QueueController extends Controller
         if ($request->expectsJson()) {
             return response()->json([
                 'ticket' => $queueTicket,
-                'waiting_count' => QueueTicket::forDate()->where('status', 'waiting')->count(),
+                'waiting_count' => $this->scoped(QueueTicket::forDate())->where('status', 'waiting')->count(),
             ]);
         }
 
@@ -152,10 +163,30 @@ class QueueController extends Controller
     /** Wipe every ticket issued today and start the board fresh. */
     public function reset(): RedirectResponse
     {
-        $removed = QueueTicket::forDate()->delete();
+        $removed = $this->scoped(QueueTicket::forDate())->delete();
 
         return redirect()
             ->route('admin.queue.index')
             ->with('success', 'Queue reset — '.$removed.' ticket(s) cleared from today\'s board.');
+    }
+
+    /**
+     * A barangay counter acts only on the slips its own barangay issued. The
+     * city admin sees the combined board and may act on any of them.
+     */
+    private function guardInScope(QueueTicket $queueTicket): void
+    {
+        $id = $this->scopeBarangayId();
+
+        if ($id === null) {
+            return; // city admin
+        }
+
+        $ticketBarangay = $queueTicket->barangay_id
+            ?? $queueTicket->resident?->barangay_id;
+
+        if ($ticketBarangay !== $id) {
+            abort(404);
+        }
     }
 }

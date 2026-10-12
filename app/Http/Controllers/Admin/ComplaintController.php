@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\ScopesAdminQueries;
 use App\Http\Controllers\Controller;
 use App\Models\Complaint;
 use App\Models\User;
@@ -13,6 +14,8 @@ use Illuminate\View\View;
 
 class ComplaintController extends Controller
 {
+    use ScopesAdminQueries;
+
     /** Lifecycle of a complaint, in order. */
     public const STATUSES = [
         'received' => 'Received',
@@ -57,7 +60,8 @@ class ComplaintController extends Controller
 
     public function index(Request $request): View
     {
-        $query = Complaint::query()->with(['resident:id,name,purok,avatar', 'assignee:id,name']);
+        $query = $this->scoped(Complaint::query())
+            ->with(['resident:id,name,purok,avatar', 'assignee:id,name']);
 
         if (in_array($request->input('status'), array_keys(self::STATUSES), true)) {
             $query->where('status', $request->input('status'));
@@ -84,7 +88,7 @@ class ComplaintController extends Controller
 
         $complaints = $query->latest()->paginate(12)->withQueryString();
 
-        $counts = Complaint::query()
+        $counts = $this->scoped(Complaint::query())
             ->select('status', DB::raw('COUNT(*) as total'))
             ->groupBy('status')
             ->pluck('total', 'status');
@@ -92,11 +96,14 @@ class ComplaintController extends Controller
         return view('admin.complaints.index', [
             'complaints' => $complaints,
             'counts' => $counts,
+            'scopeLabel' => $this->scopeLabel(),
         ]);
     }
 
     public function show(Complaint $complaint): View
     {
+        $this->guardInScope($complaint);
+
         $complaint->load([
             'resident:id,name,email,phone,purok,address,avatar,role',
             'assignee:id,name,avatar',
@@ -126,6 +133,8 @@ class ComplaintController extends Controller
 
     public function update(Request $request, Complaint $complaint): RedirectResponse
     {
+        $this->guardInScope($complaint);
+
         $data = $request->validate([
             'status' => ['required', Rule::in(array_keys(self::STATUSES))],
             'priority' => ['required', Rule::in(array_keys(self::PRIORITIES))],
@@ -173,6 +182,8 @@ class ComplaintController extends Controller
 
     public function note(Request $request, Complaint $complaint): RedirectResponse
     {
+        $this->guardInScope($complaint);
+
         $data = $request->validate([
             'title' => ['nullable', 'string', 'max:140'],
             'note' => ['required', 'string', 'max:4000'],
@@ -188,5 +199,19 @@ class ComplaintController extends Controller
         return redirect()
             ->route('admin.complaints.show', $complaint)
             ->with('success', 'A new entry was added to the tracker.');
+    }
+
+    /**
+     * A barangay admin must not open, edit or annotate another barangay's
+     * complaint. A 404 rather than a 403, so the reference number of a record
+     * outside the official's scope is not disclosed.
+     */
+    private function guardInScope(Complaint $complaint): void
+    {
+        $id = $this->scopeBarangayId();
+
+        if ($id !== null && $complaint->barangay_id !== $id) {
+            abort(404);
+        }
     }
 }

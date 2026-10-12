@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ScopedToBarangay;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class LostFound extends Model
 {
+    use ScopedToBarangay;
+
     protected $table = 'lost_found';
 
     protected $fillable = [
@@ -19,6 +22,7 @@ class LostFound extends Model
         'contact_info',
         'image',
         'reported_by',
+        'barangay_id',
     ];
 
     protected function casts(): array

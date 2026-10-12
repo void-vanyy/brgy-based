@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\ScopesAdminQueries;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use Illuminate\Http\RedirectResponse;
@@ -11,9 +12,12 @@ use Illuminate\View\View;
 
 class AppointmentController extends Controller
 {
+    use ScopesAdminQueries;
+
     public function index(Request $request): View
     {
-        $query = Appointment::query()->with(['resident:id,name,email,avatar,purok', 'processor:id,name']);
+        $query = $this->scopedByResident(Appointment::query())
+            ->with(['resident:id,name,email,avatar,purok', 'processor:id,name']);
 
         if (in_array($request->input('status'), array_keys(Appointment::STATUSES), true)) {
             $query->where('status', $request->input('status'));
@@ -35,7 +39,7 @@ class AppointmentController extends Controller
             ->get()
             ->groupBy(fn ($a) => $a->appointment_date->toDateString());
 
-        $counts = Appointment::query()
+        $counts = $this->scopedByResident(Appointment::query())
             ->select('status', \Illuminate\Support\Facades\DB::raw('COUNT(*) as total'))
             ->groupBy('status')
             ->pluck('total', 'status');
@@ -44,6 +48,7 @@ class AppointmentController extends Controller
             'appointments' => $appointments,
             'counts' => $counts,
             'statuses' => Appointment::STATUSES,
+            'scopeLabel' => $this->scopeLabel(),
             'badge' => [
                 'pending' => 'badge-cyan',
                 'confirmed' => 'badge-amber',
@@ -56,6 +61,8 @@ class AppointmentController extends Controller
 
     public function update(Request $request, Appointment $appointment): RedirectResponse
     {
+        $this->guardInScope($appointment);
+
         $data = $request->validate([
             'status' => ['required', Rule::in(array_keys(Appointment::STATUSES))],
             'remarks' => ['nullable', 'string', 'max:4000'],
@@ -70,5 +77,15 @@ class AppointmentController extends Controller
         return redirect()
             ->route('admin.appointments.index')
             ->with('success', $appointment->reference_no.' is now "'.$appointment->statusLabel().'".');
+    }
+
+    /** As with documents: scope follows the resident who booked it. */
+    private function guardInScope(Appointment $appointment): void
+    {
+        $id = $this->scopeBarangayId();
+
+        if ($id !== null && $appointment->resident?->barangay_id !== $id) {
+            abort(404);
+        }
     }
 }

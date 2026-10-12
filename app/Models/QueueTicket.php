@@ -11,6 +11,7 @@ class QueueTicket extends Model
     protected $fillable = [
         'ticket_no',
         'user_id',
+        'barangay_id',
         'name_on_ticket',
         'service',
         'window',
@@ -46,9 +47,19 @@ class QueueTicket extends Model
         'no_show' => 'No Show',
     ];
 
+    /**
+     * The account behind the ticket. The foreign key must be stated: Laravel
+     * would otherwise infer `resident_id` from the method name, and the column
+     * is `user_id` (a walk-in slip simply leaves it null).
+     */
     public function resident(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function barangay(): BelongsTo
+    {
+        return $this->belongsTo(Barangay::class);
     }
 
     public function serviceName(): string

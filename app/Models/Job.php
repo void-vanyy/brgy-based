@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ScopedToBarangay;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Job extends Model
 {
+    use ScopedToBarangay;
+
     /** Livelihood listings — deliberately not the framework's queue `jobs` table. */
     protected $table = 'job_postings';
 
@@ -26,6 +29,7 @@ class Job extends Model
         'status',
         'is_featured',
         'posted_by',
+        'barangay_id',
     ];
 
     protected function casts(): array

@@ -70,7 +70,7 @@
                                 {{ strtoupper(substr(preg_split('/\s+/', trim($settings['barangay_name'] ?? 'Barangay'))[0] ?? 'B', 0, 2)) }}
                             </span>
                             <div class="grow" style="min-width:0">
-                                <div class="bold" style="font-size:1.05rem">{{ $settings['barangay_name'] ?? 'Barangay Sigla' }}</div>
+                                <div class="bold" style="font-size:1.05rem">{{ $settings['barangay_name'] ?? 'Santa Rosa City — e-Services' }}</div>
                                 <div class="small muted">{{ $settings['barangay_address'] ?? 'Barangay Hall address' }}</div>
                                 <div class="tiny dim mt-1">{{ $settings['barangay_contact'] ?? 'Hotline / e-mail' }}</div>
                             </div>

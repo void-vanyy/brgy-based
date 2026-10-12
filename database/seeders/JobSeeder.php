@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Barangay;
 use App\Models\Job;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -10,22 +11,39 @@ class JobSeeder extends Seeder
 {
     /**
      * Ten open livelihood listings (two featured) plus one closed posting.
+     *
+     * Listings a barangay itself posts — quad staff, a local carinderia, a
+     * household nearby — sit in that barangay. Regional/national employers
+     * (BPO, construction, delivery fleets) are posted city-wide so every
+     * resident can see them, which is what makes the filter meaningful.
      */
+    private const BARANGAYS = [
+        'Barangay Utility Worker (Quad Staff)'    => 'Tagapo',
+        'Canteen Cook Assistant (Morning Shift)'  => 'Kanluran',
+        'Home Caregiver for Senior Parent'        => 'Labas',
+        'Farm Hand — Vegetable Plot Cooperative'  => 'Tagapo',
+        'Household Helper (Live-out)'             => 'Pooc',
+        'Event Photographer — Barangay Fiesta'    => 'Kanluran',
+        // Everything else stays city-wide (null).
+    ];
+
     public function run(): void
     {
         $poster = User::query()->where('role', 'staff')->value('id')
             ?? User::query()->where('role', 'admin')->value('id');
 
+        $ids = Barangay::query()->pluck('id', 'name');
+
         $rows = [
             [
                 'title'           => 'Barangay Utility Worker (Quad Staff)',
-                'company'         => 'Barangay Sigla',
+                'company'         => 'Barangay Tagapo',
                 'category'        => 'general',
-                'location'        => 'Barangay Hall, District II',
+                'location'        => 'Barangay Hall, Tagapo',
                 'employment_type' => 'full_time',
                 'salary'          => '₱600 / day',
                 'description'     => 'Maintain cleanliness of the barangay hall and records room, assist in the distribution of forms, and support the weekly clean-up drive. Shift starts at 7:30 AM, Monday to Saturday.',
-                'requirements'    => 'At least high school graduate; willing to work outdoors; resident of Barangay Sigla or an adjacent barangay.',
+                'requirements'    => 'At least high school graduate; willing to work outdoors; resident of Barangay Tagapo or an adjacent barangay.',
                 'contact_person'  => 'Angela R. Bautista',
                 'contact_number'  => '(02) 8536-1188',
                 'contact_email'   => 'staff@barangay.gov',
@@ -57,7 +75,7 @@ class JobSeeder extends Seeder
                 'title'           => 'Canteen Cook Assistant (Morning Shift)',
                 'company'         => 'Tita Nena’s Carinderia',
                 'category'        => 'food_service',
-                'location'        => 'Sigla Street, Zone 4',
+                'location'        => 'Rizal Boulevard, Zone 4, Kanluran',
                 'employment_type' => 'part_time',
                 'salary'          => '₱450 / day',
                 'description'     => 'Prepare vegetables, clean ingredients and serve lunch customers from 5:30 AM to 12:30 NN, Monday to Friday.',
@@ -73,9 +91,9 @@ class JobSeeder extends Seeder
             ],
             [
                 'title'           => 'Retail Sales Associate',
-                'company'         => 'Sigla Mart',
+                'company'         => 'Santa Rosa Mart',
                 'category'        => 'retail',
-                'location'        => 'Sigla Mart, District II',
+                'location'        => 'Santa Rosa Mart, Poblacion',
                 'employment_type' => 'full_time',
                 'salary'          => '₱18,000–22,000 / month',
                 'description'     => 'Handle cashier duties, replenish shelves and assist shoppers in the grocery section. Two rotating shifts with rest days every week.',
@@ -93,7 +111,7 @@ class JobSeeder extends Seeder
                 'title'           => 'Home Caregiver for Senior Parent',
                 'company'         => 'Private Household',
                 'category'        => 'healthcare',
-                'location'        => 'Purok 5, Barangay Sigla',
+                'location'        => 'Purok 5, Barangay Labas',
                 'employment_type' => 'contract',
                 'salary'          => '₱20,000 / month',
                 'description'     => 'Assist an 82-year-old with mobility, medication reminders and light meal preparation. Live-out arrangement, eight-hour shift.',
@@ -109,16 +127,16 @@ class JobSeeder extends Seeder
             ],
             [
                 'title'           => 'Farm Hand — Vegetable Plot Cooperative',
-                'company'         => 'Sigla Urban Farm Cooperative',
+                'company'         => 'Santa Rosa Urban Farm Cooperative',
                 'category'        => 'agriculture',
-                'location'        => 'City lots, District II',
+                'location'        => 'City lots, Tagapo',
                 'employment_type' => 'part_time',
                 'salary'          => '₱400 / day',
                 'description'     => 'Prepare beds, water and harvest eggplant, okra and leafy greens for the weekly market run. Work is from 5:30 AM to 10:30 AM.',
                 'requirements'    => 'Willing to work under the sun; training on organic spraying provided.',
                 'contact_person'  => 'Teresita Ocampo',
                 'contact_number'  => '0995 661 3390',
-                'contact_email'   => 'siglafarm@gmail.com',
+                'contact_email'   => 'santarosafarm@gmail.com',
                 'deadline'        => now()->addDays(7)->toDateString(),
                 'status'          => 'open',
                 'is_featured'     => false,
@@ -147,7 +165,7 @@ class JobSeeder extends Seeder
                 'title'           => 'Household Helper (Live-out)',
                 'company'         => 'Private Household',
                 'category'        => 'domestic',
-                'location'        => 'Purok 2, Barangay Sigla',
+                'location'        => 'Purok 2, Barangay Pooc',
                 'employment_type' => 'full_time',
                 'salary'          => '₱16,000 / month',
                 'description'     => 'General housekeeping for a family of four: laundry, light cooking and dishwashing, six days a week.',
@@ -181,16 +199,16 @@ class JobSeeder extends Seeder
             ],
             [
                 'title'           => 'Delivery Rider (Own Motorcycle)',
-                'company'         => 'Sigla Express Food Delivery',
+                'company'         => 'Rosa Express Food Delivery',
                 'category'        => 'general',
-                'location'        => 'Barangay Sigla and nearby barangays',
+                'location'        => 'Santa Rosa City and nearby barangays',
                 'employment_type' => 'freelance',
                 'salary'          => '₱500 / day + incentives',
                 'description'     => 'Deliver food and parcel orders using the app. Choose your own hours — minimum four hours per shift, daily payout.',
                 'requirements'    => 'Valid motorcycle driver’s license; smartphone; own unit with helmet and rain gear.',
                 'contact_person'  => 'Jomar Panganiban',
                 'contact_number'  => '0995 004 7712',
-                'contact_email'   => 'ops@siglaexpress.ph',
+                'contact_email'   => 'ops@rosaexpress.ph',
                 'deadline'        => now()->addDays(6)->toDateString(),
                 'status'          => 'open',
                 'is_featured'     => false,
@@ -201,7 +219,7 @@ class JobSeeder extends Seeder
                 'title'           => 'Event Photographer — Barangay Fiesta',
                 'company'         => 'LumiCapture Studio',
                 'category'        => 'general',
-                'location'        => 'Barangay Sigla',
+                'location'        => 'Barangay Kanluran',
                 'employment_type' => 'freelance',
                 'salary'          => '₱4,500 / event',
                 'description'     => 'Cover the fiesta parade, program and night concert. Deliver 150 edited photos within three days.',
@@ -221,7 +239,18 @@ class JobSeeder extends Seeder
             $at = $row['at'];
             unset($row['at']);
 
-            $job = Job::query()->firstOrCreate(['title' => $row['title']], $row);
+            $barangay = self::BARANGAYS[$row['title']] ?? null;
+
+            if ($barangay !== null && ! isset($ids[$barangay])) {
+                $this->command?->error("Unknown barangay for job {$row['title']}: {$barangay}");
+
+                continue;
+            }
+
+            $job = Job::query()->firstOrCreate(
+                ['title' => $row['title']],
+                $row + ['barangay_id' => $barangay !== null ? $ids[$barangay] : null]
+            );
 
             $job->forceFill(['created_at' => $at, 'updated_at' => $at])->save();
         }

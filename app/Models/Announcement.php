@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ScopedToBarangay;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Announcement extends Model
 {
+    use ScopedToBarangay;
+
     protected $fillable = [
         'title',
         'body',
@@ -17,6 +20,7 @@ class Announcement extends Model
         'location',
         'published_at',
         'created_by',
+        'barangay_id',
     ];
 
     protected function casts(): array

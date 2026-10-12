@@ -40,7 +40,7 @@ class DashboardController extends Controller
 
         $barangay = [
             'name' => Setting::get('barangay_name', config('app.name')),
-            'address' => Setting::get('barangay_address', 'Barangay Hall, Sigla Street'),
+            'address' => Setting::get('barangay_address', 'City Hall Complex, Rizal Boulevard'),
             'contact' => Setting::get('barangay_contact', '(02) 8123-4567'),
             'captain' => Setting::get('barangay_capain', Setting::get('barangay_captain', 'Hon. Juan Dela Cruz')),
             'motto' => Setting::get('barangay_motto', 'Malasakit, Serbisyo, Pagkakaisa.'),

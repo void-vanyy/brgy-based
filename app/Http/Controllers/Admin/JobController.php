@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\ScopesAdminQueries;
 use App\Http\Controllers\Controller;
 use App\Models\Job;
 use Illuminate\Http\RedirectResponse;
@@ -11,9 +12,11 @@ use Illuminate\View\View;
 
 class JobController extends Controller
 {
+    use ScopesAdminQueries;
+
     public function index(Request $request): View
     {
-        $query = Job::query()->with('poster:id,name');
+        $query = $this->scopedVisible(Job::query())->with('poster:id,name');
 
         if (in_array($request->input('status'), ['open', 'closed'], true)) {
             $query->where('status', $request->input('status'));
@@ -32,12 +35,17 @@ class JobController extends Controller
 
         $jobs = $query->orderByDesc('is_featured')->latest()->get();
 
+        $openCount = $this->scopedVisible(Job::query())->where('status', 'open')->count();
+        $closedCount = $this->scopedVisible(Job::query())->where('status', 'closed')->count();
+        $total = $this->scopedVisible(Job::query())->count();
+
         return view('admin.jobs.index', [
             'jobs' => $jobs,
-            'openCount' => Job::where('status', 'open')->count(),
-            'closedCount' => Job::where('status', 'closed')->count(),
-            'total' => Job::count(),
+            'openCount' => $openCount,
+            'closedCount' => $closedCount,
+            'total' => $total,
             'categories' => Job::CATEGORIES,
+            'scopeLabel' => $this->scopeLabel(),
             'badge' => [
                 'open' => 'badge-green',
                 'closed' => 'badge-rose',
@@ -62,6 +70,7 @@ class JobController extends Controller
             'status' => $data['status'] ?? 'open',
             'is_featured' => $request->boolean('is_featured'),
             'posted_by' => $request->user()?->id,
+            'barangay_id' => $this->scopeBarangayId(),
         ]);
 
         return redirect()
@@ -71,11 +80,15 @@ class JobController extends Controller
 
     public function edit(Job $job): View
     {
+        $this->guardInScope($job);
+
         return view('admin.jobs.edit', ['job' => $job]);
     }
 
     public function update(Request $request, Job $job): RedirectResponse
     {
+        $this->guardInScope($job);
+
         $data = $this->validated($request);
 
         $job->update([
@@ -91,12 +104,27 @@ class JobController extends Controller
 
     public function destroy(Job $job): RedirectResponse
     {
+        $this->guardInScope($job);
+
         $title = $job->title;
         $job->delete();
 
         return redirect()
             ->route('admin.jobs.index')
             ->with('success', '"'.$title.'" was removed from the board.');
+    }
+
+    /**
+     * Regional and city-wide listings stay visible on the barangay board but
+     * are managed by the city office, so only the posting barangay may edit.
+     */
+    private function guardInScope(Job $job): void
+    {
+        $id = $this->scopeBarangayId();
+
+        if ($id !== null && $job->barangay_id !== $id) {
+            abort(404);
+        }
     }
 
     private function validated(Request $request): array
