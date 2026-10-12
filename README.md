@@ -7,6 +7,48 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## Santa Rosa City e-Services
+
+A barangay e-services portal covering all 18 barangays of Santa Rosa City,
+Laguna. Built to run on **localhost only** — Laravel 12, MariaDB via XAMPP,
+Apache, and a hand-written CSS design system (no Node build step).
+
+Sign in with any seeded account, password `password`. The login page lists
+the three most useful: the city admin (all 18 barangays), a barangay official
+(Tagapo), and a resident.
+
+### Local setup
+
+```powershell
+# 1. XAMPP: start Apache + MySQL, then create an empty `brgy_db` in phpMyAdmin
+# 2. From the project root:
+C:\xampp\php\php.exe artisan migrate:fresh --seed
+C:\xampp\php\php.exe artisan config:cache      # see the note below
+C:\xampp\php\php.exe artisan view:clear
+```
+
+The site is served from `http://localhost/brgy` (an `htdocs` junction pointing
+at this project's `public/` folder).
+
+### Why `config:cache` is required here
+
+Apache runs PHP as **mod_php under the threaded `mpm_winnt` MPM**, so all
+requests share one process. Laravel loads `.env` with `putenv()`, which is
+process-global and not thread-safe in a threaded SAPI. Under concurrent
+requests the environment races, and a request can boot with no `.env` at all
+— it then falls back to `APP_ENV=production`, no `APP_KEY`, and SQLite.
+
+Measured on this box: without the config cache, 12 concurrent requests
+produce a mix of 503s and 500s. With it, 120/120 requests succeed and no
+failures are logged.
+
+**The trade-off:** `.env` is no longer read per request, so after editing
+`.env` you must re-run `php artisan config:cache`. If the site suddenly looks
+like it is ignoring your `.env`, that command is the fix.
+
+`bootstrap/cache/` is gitignored, so the cache (which contains `APP_KEY`) is
+never committed — a fresh clone must run `config:cache` once.
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
