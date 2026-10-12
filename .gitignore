@@ -19,6 +19,8 @@
 /storage/*.key
 /storage/pail
 /vendor
+# Only used if .env ever fails to load; this app runs on MySQL/MariaDB.
+/database/database.sqlite
 Homestead.json
 Homestead.yaml
 Thumbs.db
