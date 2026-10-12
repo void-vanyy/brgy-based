@@ -14,7 +14,12 @@
 
     --text:          #e7eefc;
     --muted:         #93a1bd;
-    --dim:           #64748b;
+    /* --dim was #64748b: measured 3.7-4.1:1 against the panels it sits on,
+       under the 4.5 AA floor, so the smallest labels (stat labels, timestamps,
+       footer headings) read as washed out. #8090aa clears 4.5 on every surface
+       it is used on (worst case: the card panel behind the features table),
+       and stays visibly below --muted. */
+    --dim:           #8090aa;
 
     --primary:       #22d3ee;
     --primary-deep:  #0891b2;
@@ -910,8 +915,11 @@ p:last-child { margin-bottom: 0; }
     border-bottom: 1px solid var(--border);
 }
 .site-nav .links { display: flex; gap: 1.5rem; align-items: center; }
-.site-nav .links a { color: var(--muted); font-size: .88rem; font-weight: 550; transition: .15s; }
-.site-nav .links a:hover { color: var(--primary); text-decoration: none; }
+/* :not(.btn) is load-bearing - as written this rule outranks .btn-primary
+   (0-2-1 vs 0-1-0), so the header's "Create account" button took the link
+   grey and its label vanished into the cyan fill. */
+.site-nav .links a:not(.btn) { color: var(--muted); font-size: .88rem; font-weight: 550; transition: .15s; }
+.site-nav .links a:not(.btn):hover { color: var(--primary); text-decoration: none; }
 
 .hero { position: relative; padding: clamp(3rem, 9vw, 6.5rem) clamp(1rem, 4vw, 2.6rem) clamp(3rem, 7vw, 5rem); overflow: hidden; }
 .hero-inner { max-width: 1180px; margin: 0 auto; position: relative; z-index: 2; }
@@ -1320,7 +1328,10 @@ p:last-child { margin-bottom: 0; }
 .legend-item { display: flex; align-items: flex-start; gap: .55rem; }
 .legend-item .badge { flex-shrink: 0; margin-top: .1rem; }
 .legend-item b { display: block; color: var(--text); font-size: .8rem; font-weight: 600; line-height: 1.3; }
-.legend-item span { display: block; color: var(--dim); font-size: .75rem; line-height: 1.45; }
+/* :not(.badge) is load-bearing - without it this rule (0-1-1) beats
+   .badge-cyan/.badge-amber (0-1-0) and greyed out every swatch in the
+   colour key, plus forced display:block over the badge's inline-flex. */
+.legend-item span:not(.badge) { display: block; color: var(--dim); font-size: .75rem; line-height: 1.45; }
 .legend-note { margin: .7rem 0 0; font-size: .75rem; color: var(--dim); }
 
 /* --- "needs your attention" strip: the first-timer's starting point --- */
