@@ -28,7 +28,7 @@
     </div>
 
     {{-- ============ filters ============ --}}
-    <form method="GET" action="{{ route('admin.lost-found.index') }}">
+    <form method="GET" data-filter-ajax action="{{ route('admin.lost-found.index') }}">
         <div class="toolbar">
             <div class="row gap-1" style="gap:.45rem">
                 @foreach ($chips as $key => $label)

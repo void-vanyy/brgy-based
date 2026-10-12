@@ -49,7 +49,7 @@
     </div>
 
     {{-- ============ filters ============ --}}
-    <form method="GET" action="{{ route('admin.requests.index') }}">
+    <form method="GET" data-filter-ajax action="{{ route('admin.requests.index') }}">
         <div class="toolbar">
             <div class="search-box grow">
                 <input type="search" name="q" class="input" placeholder="Search reference number or resident…"
@@ -65,7 +65,7 @@
 
             <button type="submit" class="btn btn-primary"><x-icon name="search" size="15" /> Apply</button>
             <a href="{{ route('admin.requests.index') }}" class="btn btn-ghost">Reset</a>
-            <span class="small dim grow right">{{ $requests->total() }} request(s)</span>
+            <span class="small dim grow right" data-result-count>{{ $requests->total() }} request(s)</span>
         </div>
     </form>
 

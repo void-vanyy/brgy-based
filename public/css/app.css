@@ -253,6 +253,10 @@ p:last-child { margin-bottom: 0; }
 
 .content { padding: 1.6rem 1.5rem 3rem; width: 100%; max-width: 1360px; margin: 0 auto; flex: 1; }
 
+/* Filtered lists swap this region in place; dimming it keeps the change from
+   reading as a jump, and pointer-events stops a second click mid-request. */
+.content.is-loading { opacity: .5; pointer-events: none; transition: opacity .12s ease; }
+
 .hamburger {
     display: none;
     width: 38px; height: 38px;

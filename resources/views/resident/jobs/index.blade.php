@@ -18,13 +18,13 @@
         </div>
     </div>
 
-    <form class="toolbar" method="GET" action="{{ route('resident.jobs.index') }}">
+    <form class="toolbar" method="GET" data-filter-ajax action="{{ route('resident.jobs.index') }}">
         <div class="search-box grow">
             <input class="input" type="search" name="q" value="{{ old('q', $q) }}" placeholder="Search job title, employer or location…">
         </div>
 
         <div>
-            <select class="select" name="category" onchange="this.form.submit()">
+            <select class="select" name="category" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()">
                 <option value="">All categories</option>
                 @foreach ($categories as $key => $label)
                     <option value="{{ $key }}" @selected(old('category', $category) === $key)>{{ $label }}</option>
@@ -33,7 +33,7 @@
         </div>
 
         <div>
-            <select class="select" name="employment_type" onchange="this.form.submit()">
+            <select class="select" name="employment_type" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()">
                 <option value="">All work types</option>
                 @foreach ($types as $key => $label)
                     <option value="{{ $key }}" @selected(old('employment_type', $type) === $key)>{{ $label }}</option>

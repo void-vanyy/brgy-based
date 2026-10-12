@@ -281,6 +281,148 @@
         }
     });
 
+    /* ---------- in-place list filtering (no reload) ----------
+       The list pages are plain GET forms, so pressing Apply used to navigate
+       and repaint the whole page - and with every dropdown still on "All...",
+       that repaint was identical to what was already on screen, so the button
+       looked broken. Forms marked data-filter-ajax are fetched instead and
+       only <main class="content"> is swapped: scroll position, any open legend
+       and the sidebar all survive.
+
+       The tabs, chips, Reset and pagination links beside the form are
+       intercepted too, so every way of narrowing the same list behaves the
+       same way. The address bar still updates (pushState), so back and
+       forward step through filters.
+
+       Progressive enhancement: without the attribute, or if the fetch fails or
+       lands somewhere unexpected - a session that expired mid-filter, say -
+       the browser navigates exactly as it always did. */
+
+    function listRegion() {
+        return document.querySelector('main.content');
+    }
+
+    function renderFlash(scope) {
+        scope.querySelectorAll('[data-flash]').forEach(function (node) {
+            toast(node.getAttribute('data-flash'), node.getAttribute('data-flash-type') || 'info');
+            node.remove();
+        });
+    }
+
+    /* Read the counter if the page shows one, so the toast can say how much
+       matched instead of just announcing that something happened. */
+    function resultLabel(doc) {
+        var el = doc.querySelector('[data-result-count]');
+        if (!el) return '';
+        var digits = (el.textContent.match(/[\d,]+/) || [])[0];
+        if (!digits) return '';
+        var n = parseInt(digits.replace(/,/g, ''), 10);
+        if (isNaN(n)) return '';
+        return ' \u00b7 ' + n + (n === 1 ? ' result' : ' results');
+    }
+
+    /* Only send fields that mean something, so filtering to "Resolved" gives
+       ?status=resolved rather than ?q=&status=resolved&priority=&category=. */
+    function filterQuery(form) {
+        var params = new URLSearchParams();
+        Array.prototype.forEach.call(form.elements, function (el) {
+            if (!el.name || el.disabled) return;
+            if ((el.type === 'checkbox' || el.type === 'radio') && !el.checked) return;
+            if (el.value === '' || el.value === null) return;
+            params.append(el.name, el.value);
+        });
+        return params.toString();
+    }
+
+    function loadList(url, options) {
+        options = options || {};
+        var region = listRegion();
+        var button = options.button || null;
+
+        if (button) button.disabled = true;
+        if (region) region.classList.add('is-loading');
+
+        return fetch(url, {
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'text/html' }
+        })
+            .then(function (res) {
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return res.text();
+            })
+            .then(function (html) {
+                var doc = new DOMParser().parseFromString(html, 'text/html');
+
+                /* The login page has no main.content - that means we were
+                   bounced, so let the browser show it properly. */
+                var next = doc.querySelector('main.content');
+                if (!region || !next) throw new Error('no content region');
+
+                region.innerHTML = next.innerHTML;
+                renderFlash(region);
+
+                if (options.push) {
+                    /* Mark the entry we are leaving as well, or going back to
+                       it would change the URL without changing the list. */
+                    if (!history.state || !history.state.listFilter) {
+                        history.replaceState({ listFilter: true }, '', location.href);
+                    }
+                    history.pushState({ listFilter: true }, '', url);
+                }
+
+                if (!options.quiet) toast('Filters applied' + resultLabel(doc), 'info');
+                return true;
+            })
+            .catch(function () {
+                window.location.href = url;
+                return false;
+            })
+            .then(function (done) {
+                if (region) region.classList.remove('is-loading');
+                if (button) button.disabled = false;
+                return done;
+            });
+    }
+
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form.matches('form[data-filter-ajax]')) return;
+        if (e.defaultPrevented) return;
+        e.preventDefault();
+
+        var qs = filterQuery(form);
+        loadList(location.pathname + (qs ? '?' + qs : ''), {
+            push: true,
+            button: form.querySelector('[type="submit"]')
+        });
+    });
+
+    /* The same list, a different URL: status tabs, chips, Reset, pagination. */
+    document.addEventListener('click', function (e) {
+        if (e.defaultPrevented || e.button !== 0) return;
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;  /* keep "open in new tab" */
+
+        var link = e.target.closest('main.content a[href]');
+        if (!link || link.target === '_blank' || link.hasAttribute('download')) return;
+
+        var href = link.getAttribute('href');
+        if (!href || href.charAt(0) === '#') return;
+
+        var url;
+        try { url = new URL(href, location.href); } catch (err) { return; }
+        if (url.origin !== location.origin) return;
+        if (url.pathname !== location.pathname) return;   /* a different page: leave it alone */
+
+        e.preventDefault();
+        loadList(url.pathname + url.search, { push: true });
+    });
+
+    /* Back/forward through the filter states we pushed ourselves. */
+    window.addEventListener('popstate', function (e) {
+        if (!e.state || !e.state.listFilter) return;
+        loadList(location.pathname + location.search, { push: false, quiet: true });
+    });
+
     /* ---------- live clock on queue board ---------- */
     document.addEventListener('DOMContentLoaded', function () {
         var clocks = document.querySelectorAll('[data-clock]');

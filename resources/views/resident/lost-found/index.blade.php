@@ -43,7 +43,7 @@
         </a>
     </div>
 
-    <form class="toolbar" method="GET" action="{{ route('resident.lost-found.index') }}">
+    <form class="toolbar" method="GET" data-filter-ajax action="{{ route('resident.lost-found.index') }}">
         @if ($status !== '')
             <input type="hidden" name="status" value="{{ $status }}">
         @endif

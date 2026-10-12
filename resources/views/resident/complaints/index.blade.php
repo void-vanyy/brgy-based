@@ -37,7 +37,7 @@
         @endforeach
     </div>
 
-    <form class="toolbar" method="GET" action="{{ route('resident.complaints.index') }}">
+    <form class="toolbar" method="GET" data-filter-ajax action="{{ route('resident.complaints.index') }}">
         @if ($status !== '')
             <input type="hidden" name="status" value="{{ $status }}">
         @endif
@@ -47,7 +47,7 @@
         </div>
 
         <div>
-            <select class="select" name="category" onchange="this.form.submit()">
+            <select class="select" name="category" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()">
                 <option value="">All categories</option>
                 @foreach ($categories as $key => $label)
                     <option value="{{ $key }}" @selected(old('category', $category) === $key)>{{ $label }}</option>

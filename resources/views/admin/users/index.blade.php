@@ -52,7 +52,7 @@
     </div>
 
     {{-- ============ filters ============ --}}
-    <form method="GET" action="{{ route('admin.users.index') }}">
+    <form method="GET" data-filter-ajax action="{{ route('admin.users.index') }}">
         <div class="toolbar">
             <div class="search-box grow">
                 <input type="search" name="q" class="input" placeholder="Search name, e-mail or purok…"
@@ -75,7 +75,7 @@
 
             <button type="submit" class="btn btn-primary"><x-icon name="search" size="15" /> Apply</button>
             <a href="{{ route('admin.users.index') }}" class="btn btn-ghost">Reset</a>
-            <span class="small dim grow right">{{ $users->total() }} account(s)</span>
+            <span class="small dim grow right" data-result-count>{{ $users->total() }} account(s)</span>
         </div>
     </form>
 

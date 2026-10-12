@@ -22,7 +22,7 @@
         </div>
     </div>
 
-    <form method="GET" action="{{ route('admin.jobs.index') }}">
+    <form method="GET" data-filter-ajax action="{{ route('admin.jobs.index') }}">
         <div class="toolbar">
             <div class="row" style="gap:.45rem">
                 <a href="{{ route('admin.jobs.index') }}" class="chip {{ $active === 'all' ? 'active' : '' }}">

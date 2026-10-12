@@ -35,7 +35,7 @@
         </a>
     </div>
 
-    <form method="GET" action="{{ route('admin.announcements.index') }}">
+    <form method="GET" data-filter-ajax action="{{ route('admin.announcements.index') }}">
         <div class="toolbar">
             <div class="search-box grow">
                 <input type="search" name="q" class="input" placeholder="Search title or body…" value="{{ old('q', request('q')) }}">

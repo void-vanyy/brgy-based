@@ -33,7 +33,7 @@
     </div>
 
     {{-- ============ search ============ --}}
-    <form method="GET" action="{{ route('admin.appointments.index') }}">
+    <form method="GET" data-filter-ajax action="{{ route('admin.appointments.index') }}">
         <div class="toolbar">
             <div class="search-box grow">
                 <input type="search" name="q" class="input" placeholder="Search reference, subject, office or resident…"
