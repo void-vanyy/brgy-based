@@ -18,7 +18,50 @@ class QueueController extends Controller
     /** The single display board on the wall plus the per-window counters. */
     public const WINDOWS = ['Window 1', 'Window 2', 'Window 3', 'Window 4'];
 
+    /**
+     * Which buttons each ticket status offers, as [label, target status, class].
+     * Shared by the board and by the ajax patch that rewrites a row, so a
+     * freshly rendered row offers exactly the same actions as a full load.
+     */
+    public const ACTIONS = [
+        'waiting' => [
+            ['Call', 'called', 'btn-primary'],
+            ['Skip', 'skipped', 'btn-ghost'],
+            ['No show', 'no_show', 'btn-ghost'],
+        ],
+        'called' => [
+            ['Start', 'serving', 'btn-primary'],
+            ['Done', 'done', 'btn-success'],
+            ['Skip', 'skipped', 'btn-ghost'],
+        ],
+        'serving' => [
+            ['Done', 'done', 'btn-success'],
+            ['No show', 'no_show', 'btn-ghost'],
+        ],
+    ];
+
+    /** Status -> badge class, shared by the board and the in-place patch. */
+    public const STATUS_BADGES = [
+        'waiting' => 'badge-cyan',
+        'called' => 'badge-amber',
+        'serving' => 'badge-amber',
+        'done' => 'badge-green',
+        'skipped' => 'badge-rose',
+        'no_show' => 'badge-rose',
+    ];
+
     public function index(): View
+    {
+        return view('admin.queue.index', $this->boardData());
+    }
+
+    /**
+     * Everything the board renders, gathered once so the first load and an
+     * ajax refresh of the same regions are computed by identical code.
+     *
+     * @return array<string, mixed>
+     */
+    private function boardData(): array
     {
         $today = $this->scoped(QueueTicket::forDate());
 
@@ -38,26 +81,21 @@ class QueueController extends Controller
             ->orderByDesc('id')
             ->get();
 
-        return view('admin.queue.index', [
+        return [
             'nowServing' => $nowServing,
             'waiting' => $waiting,
             'active' => $active,
             'finished' => $finished,
+            'nextInLine' => $waiting->take(5),
             'windows' => self::WINDOWS,
             'services' => QueueTicket::SERVICES,
             'statuses' => QueueTicket::STATUSES,
             'scopeLabel' => $this->scopeLabel(),
-            'badge' => [
-                'waiting' => 'badge-cyan',
-                'called' => 'badge-amber',
-                'serving' => 'badge-amber',
-                'done' => 'badge-green',
-                'skipped' => 'badge-rose',
-                'no_show' => 'badge-rose',
-            ],
+            'actions' => self::ACTIONS,
+            'badge' => self::STATUS_BADGES,
             'doneCount' => $finished->where('status', 'done')->count(),
             'skippedCount' => $finished->whereIn('status', ['skipped', 'no_show'])->count(),
-        ]);
+        ];
     }
 
     /** Issue a ticket for a resident who walks up to the counter. */
@@ -152,12 +190,38 @@ class QueueController extends Controller
             return response()->json([
                 'ticket' => $queueTicket,
                 'waiting_count' => $this->scoped(QueueTicket::forDate())->where('status', 'waiting')->count(),
+                'message' => $queueTicket->ticket_no.' is now "'.$queueTicket->statusLabel().'".',
+                'patches' => $this->boardPatches(),
             ]);
         }
 
         return redirect()
             ->route('admin.queue.index')
             ->with('success', $queueTicket->ticket_no.' is now "'.$queueTicket->statusLabel().'".');
+    }
+
+    /**
+     * Every board region a ticket action can move: the summary counts, the
+     * peek at the line, the waiting list, the window list and the finished
+     * table. A ticket changes which of these it belongs to, so an in-place
+     * update has to refresh all of them together rather than patch one badge.
+     *
+     * @return array<int, array{selector: string, html: string}>
+     */
+    private function boardPatches(): array
+    {
+        $data = $this->boardData();
+
+        return [
+            ['selector' => '#queueBoard', 'html' => view('admin.queue.partials.board', $data)->render()],
+            ['selector' => '#nextList', 'html' => view('admin.queue.partials.next-list', $data)->render()],
+            ['selector' => '#waitingList', 'html' => view('admin.queue.partials.waiting-list', $data)->render()],
+            ['selector' => '#activeList', 'html' => view('admin.queue.partials.active-list', $data)->render()],
+            ['selector' => '#finishedCard', 'html' => view('admin.queue.partials.finished', $data)->render()],
+            ['selector' => '#waitingBadge', 'html' => $data['waiting']->count().' queued'],
+            ['selector' => '#activeBadge', 'html' => $data['active']->count().' in progress'],
+            ['selector' => '#nextBadge', 'html' => $data['waiting']->count().' waiting'],
+        ];
     }
 
     /** Wipe every ticket issued today and start the board fresh. */

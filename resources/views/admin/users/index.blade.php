@@ -8,9 +8,9 @@
 
 @section('content')
     @php
-        $roleBadge = ['admin' => 'badge-violet', 'staff' => 'badge-blue', 'resident' => 'badge-neutral'];
+        $roleBadge = \App\Http\Controllers\Admin\UserController::ROLE_BADGES;
         $roleLabels = \App\Http\Controllers\Admin\UserController::ROLES;
-        $statusBadge = ['active' => 'badge-green', 'suspended' => 'badge-rose'];
+        $statusBadge = \App\Http\Controllers\Admin\UserController::STATUS_BADGES;
         $statusLabels = \App\Http\Controllers\Admin\UserController::STATUSES;
         $me = auth()->id();
         $currentRole = request('role');
@@ -103,28 +103,14 @@
                     </thead>
                     <tbody>
                         @foreach ($users as $user)
-                            <tr>
-                                <td>
-                                    <span class="user-pill">
-                                        <span class="avatar {{ $user->role === 'admin' ? 'violet' : ($user->role === 'staff' ? 'green' : 'neutral') }}">
-                                            {{ $user->initials }}
-                                        </span>
-                                        <span>
-                                            <span class="nm">
-                                                {{ $user->name }}
-                                                @if ($user->id === $me)
-                                                    <span class="badge badge-cyan">You</span>
-                                                @endif
-                                            </span>
-                                            <span class="rl">{{ $user->email }}</span>
-                                        </span>
-                                    </span>
-                                    @if ($user->purok)
-                                        <div class="tiny dim" style="padding-left:.55rem">Purok: {{ $user->purok }}</div>
-                                    @endif
+                            <tr data-record-id="{{ $user->id }}">
+                                {{-- Rewritten in place after an ajax save: the avatar colour follows the role. --}}
+                                <td data-identity-cell>
+                                    @include('admin.users.partials.identity')
                                 </td>
-                                <td><span class="badge {{ $roleBadge[$user->role] ?? 'badge-neutral' }}">{{ $roleLabels[$user->role] ?? ucfirst($user->role) }}</span></td>
-                                <td><span class="badge {{ $statusBadge[$user->status] ?? 'badge-neutral' }}">{{ $statusLabels[$user->status] ?? ucfirst($user->status) }}</span></td>
+                                {{-- Both rewritten in place after an ajax save; see UserController. --}}
+                                <td data-role-cell><span class="badge {{ $roleBadge[$user->role] ?? 'badge-neutral' }}">{{ $roleLabels[$user->role] ?? ucfirst($user->role) }}</span></td>
+                                <td data-status-cell><span class="badge {{ $statusBadge[$user->status] ?? 'badge-neutral' }}">{{ $statusLabels[$user->status] ?? ucfirst($user->status) }}</span></td>
                                 <td class="tiny dim nowrap">{{ $user->created_at->format('M j, Y') }}</td>
                                 <td class="nowrap">
                                     <div class="row" style="gap:.4rem">
@@ -214,7 +200,7 @@
                 <button type="button" class="modal-x" data-modal-close>&times;</button>
             </div>
 
-            <form method="POST" id="userForm" action="{{ route('admin.users.index') }}">
+            <form method="POST" id="userForm" data-ajax action="{{ route('admin.users.index') }}">
                 @csrf
                 @method('PATCH')
 

@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\RendersStatusPatches;
 use App\Http\Controllers\Concerns\ScopesAdminQueries;
 use App\Http\Controllers\Controller;
 use App\Models\LostFound;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -12,7 +14,7 @@ use Illuminate\View\View;
 
 class LostFoundController extends Controller
 {
-    use ScopesAdminQueries;
+    use RendersStatusPatches, ScopesAdminQueries;
 
     public function index(Request $request): View
     {
@@ -99,7 +101,14 @@ class LostFoundController extends Controller
     }
 
     /** Quick status switch from the board (lost / found / claimed). */
-    public function status(Request $request, LostFound $lostFound): RedirectResponse
+    /** Status -> badge class, shared by the board and the in-place ajax patch. */
+    public const STATUS_BADGES = [
+        'lost' => 'badge-rose',
+        'found' => 'badge-green',
+        'claimed' => 'badge-violet',
+    ];
+
+    public function status(Request $request, LostFound $lostFound): RedirectResponse|JsonResponse
     {
         $this->guardInScope($lostFound);
 
@@ -109,9 +118,23 @@ class LostFoundController extends Controller
 
         $lostFound->update(['status' => $data['status']]);
 
-        return redirect()
-            ->route('admin.lost-found.index', ['status' => $data['status']])
-            ->with('success', '"'.$lostFound->item_name.'" is now marked as '.LostFound::STATUSES[$data['status']].'.');
+        $message = '"'.$lostFound->item_name.'" is now marked as '.LostFound::STATUSES[$data['status']].'.';
+
+        return $this->savedResponse(
+            $request,
+            'admin.lost-found.index',
+            $message,
+            [
+                /* Only the badge moves - the row keeps the select the official
+                   just used, and the active status filter stays put. */
+                [
+                    'selector' => $this->statusCellSelector($lostFound->id),
+                    'badge' => self::STATUS_BADGES[$lostFound->status] ?? 'badge-neutral',
+                    'label' => $lostFound->statusLabel(),
+                ],
+            ],
+            ['status' => $data['status']],
+        );
     }
 
     /**

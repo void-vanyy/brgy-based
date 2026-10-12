@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\RendersStatusPatches;
 use App\Http\Controllers\Concerns\ScopesAdminQueries;
 use App\Http\Controllers\Controller;
 use App\Models\Complaint;
 use App\Models\User;
+use App\Support\ComplaintTracker;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +17,7 @@ use Illuminate\View\View;
 
 class ComplaintController extends Controller
 {
-    use ScopesAdminQueries;
+    use RendersStatusPatches, ScopesAdminQueries;
 
     /** Lifecycle of a complaint, in order. */
     public const STATUSES = [
@@ -131,7 +134,7 @@ class ComplaintController extends Controller
         ]);
     }
 
-    public function update(Request $request, Complaint $complaint): RedirectResponse
+    public function update(Request $request, Complaint $complaint): RedirectResponse|JsonResponse
     {
         $this->guardInScope($complaint);
 
@@ -175,12 +178,41 @@ class ComplaintController extends Controller
             ]);
         }
 
-        return redirect()
-            ->route('admin.complaints.show', $complaint)
-            ->with('success', 'Complaint '.$complaint->reference_no.' updated successfully.');
+        return $this->savedResponse(
+            $request,
+            'admin.complaints.show',
+            'Complaint '.$complaint->reference_no.' updated successfully.',
+            $this->casePatches($complaint),
+            ['complaint' => $complaint],
+        );
     }
 
-    public function note(Request $request, Complaint $complaint): RedirectResponse
+    /**
+     * The DOM pieces of the complaint page that a status save changes: the
+     * header badges, the sidebar facts and the tracker. All three render
+     * through the same partials show() uses, so the in-place rewrite and the
+     * first page load cannot disagree about what the case now says.
+     *
+     * @return array<int, array>
+     */
+    private function casePatches(Complaint $complaint): array
+    {
+        $fresh = $complaint->fresh(['updates.author:id,name', 'resident:id,name']);
+
+        return [
+            /* The header badges (priority + status). */
+            ['selector' => '[data-case-badges]', 'view' => 'admin.complaints.partials.case-badges', 'data' => ['complaint' => $fresh]],
+            /* The sidebar facts: status, priority, handler, resolved stamp. */
+            ['selector' => '#caseFacts', 'view' => 'admin.complaints.partials.case-facts', 'data' => ['complaint' => $fresh]],
+            /* The tracker card, rebuilt from the updates just written. */
+            ['selector' => '#caseTracker', 'view' => 'admin.complaints.partials.tracker', 'data' => [
+                'complaint' => $fresh,
+                'events' => ComplaintTracker::events($fresh),
+            ]],
+        ];
+    }
+
+    public function note(Request $request, Complaint $complaint): RedirectResponse|JsonResponse
     {
         $this->guardInScope($complaint);
 
@@ -196,9 +228,19 @@ class ComplaintController extends Controller
             'updated_by' => $request->user()?->id,
         ]);
 
-        return redirect()
-            ->route('admin.complaints.show', $complaint)
-            ->with('success', 'A new entry was added to the tracker.');
+        $fresh = $complaint->fresh(['updates.author:id,name', 'resident:id,name']);
+
+        return $this->savedResponse(
+            $request,
+            'admin.complaints.show',
+            'A new entry was added to the tracker.',
+            /* Only the tracker moves: a note changes no badge or fact. */
+            [['selector' => '#caseTracker', 'view' => 'admin.complaints.partials.tracker', 'data' => [
+                'complaint' => $fresh,
+                'events' => ComplaintTracker::events($fresh),
+            ]]],
+            ['complaint' => $complaint],
+        );
     }
 
     /**

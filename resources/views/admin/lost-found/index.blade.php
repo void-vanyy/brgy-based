@@ -8,7 +8,7 @@
 
 @section('content')
     @php
-        $statusBadge = ['lost' => 'badge-rose', 'found' => 'badge-green', 'claimed' => 'badge-violet'];
+        $statusBadge = \App\Http\Controllers\Admin\LostFoundController::STATUS_BADGES;
         $statusLabels = \App\Models\LostFound::STATUSES;
         $categories = \App\Models\LostFound::CATEGORIES;
         $chips = ['all' => 'All items', 'lost' => 'Lost', 'found' => 'Found', 'claimed' => 'Claimed'];
@@ -78,12 +78,16 @@
                     </thead>
                     <tbody>
                         @foreach ($items as $item)
-                            <tr>
+                            <tr data-record-id="{{ $item->id }}">
                                 <td class="strong">
                                     {{ $item->item_name }}
                                     <div class="tiny dim">{{ \Illuminate\Support\Str::limit($item->description, 80) }}</div>
-                                    <span class="badge {{ $statusBadge[$item->status] ?? 'badge-neutral' }} mt-1">
-                                        {{ $item->statusLabel() }}
+                                    {{-- Rewritten in place after an ajax save; see LostFoundController. --}}
+                                    <span data-status-cell class="mt-1" style="display:inline-flex">
+                                        @include('admin.partials.status-cell', [
+                                            'badge' => $statusBadge[$item->status] ?? 'badge-neutral',
+                                            'label' => $item->statusLabel(),
+                                        ])
                                     </span>
                                 </td>
                                 <td class="nowrap">{{ $item->categoryName() }}</td>
@@ -96,7 +100,7 @@
                                     <div class="tiny dim">{{ $item->created_at->diffForHumans() }}</div>
                                 </td>
                                 <td>
-                                    <form method="POST" action="{{ route('admin.lost-found.status', $item) }}" class="row" style="flex-wrap:nowrap; gap:.4rem">
+                                    <form method="POST" data-ajax action="{{ route('admin.lost-found.status', $item) }}" class="row" style="flex-wrap:nowrap; gap:.4rem">
                                         @csrf
                                         @method('PATCH')
                                         <select name="status" class="select" style="min-width:120px">

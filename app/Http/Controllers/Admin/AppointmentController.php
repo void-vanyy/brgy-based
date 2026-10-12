@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\RendersStatusPatches;
 use App\Http\Controllers\Concerns\ScopesAdminQueries;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -12,7 +14,16 @@ use Illuminate\View\View;
 
 class AppointmentController extends Controller
 {
-    use ScopesAdminQueries;
+    use RendersStatusPatches, ScopesAdminQueries;
+
+    /** Status -> badge class. The single map the board and the patch share. */
+    public const STATUS_BADGES = [
+        'pending' => 'badge-cyan',
+        'confirmed' => 'badge-amber',
+        'completed' => 'badge-green',
+        'cancelled' => 'badge-rose',
+        'no_show' => 'badge-rose',
+    ];
 
     public function index(Request $request): View
     {
@@ -49,17 +60,11 @@ class AppointmentController extends Controller
             'counts' => $counts,
             'statuses' => Appointment::STATUSES,
             'scopeLabel' => $this->scopeLabel(),
-            'badge' => [
-                'pending' => 'badge-cyan',
-                'confirmed' => 'badge-amber',
-                'completed' => 'badge-green',
-                'cancelled' => 'badge-rose',
-                'no_show' => 'badge-rose',
-            ],
+            'badge' => self::STATUS_BADGES,
         ]);
     }
 
-    public function update(Request $request, Appointment $appointment): RedirectResponse
+    public function update(Request $request, Appointment $appointment): RedirectResponse|JsonResponse
     {
         $this->guardInScope($appointment);
 
@@ -74,9 +79,28 @@ class AppointmentController extends Controller
             'processed_by' => $request->user()?->id,
         ]);
 
-        return redirect()
-            ->route('admin.appointments.index')
-            ->with('success', $appointment->reference_no.' is now "'.$appointment->statusLabel().'".');
+        return $this->savedResponse(
+            $request,
+            'admin.appointments.index',
+            $appointment->reference_no.' is now "'.$appointment->statusLabel().'".',
+            [
+                [
+                    'selector' => sprintf('[data-record-id="%d"] [data-status-cell]', $appointment->id),
+                    'badge' => self::STATUS_BADGES[$appointment->status] ?? 'badge-neutral',
+                    'label' => $appointment->statusLabel(),
+                    'remark' => $appointment->remarks,
+                ],
+                /* The Manage button prefills the modal from these, so they have
+                   to follow the save or the next open offers a stale value. */
+                [
+                    'selector' => sprintf('[data-record-id="%d"] [data-modal-open="manageAppointment"]', $appointment->id),
+                    'attrs' => [
+                        'data-status' => $appointment->status,
+                        'data-remarks' => (string) $appointment->remarks,
+                    ],
+                ],
+            ],
+        );
     }
 
     /** As with documents: scope follows the resident who booked it. */

@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\RendersStatusPatches;
 use App\Http\Controllers\Concerns\ScopesAdminQueries;
 use App\Http\Controllers\Controller;
 use App\Models\DocumentRequest;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -12,7 +14,7 @@ use Illuminate\View\View;
 
 class DocumentRequestController extends Controller
 {
-    use ScopesAdminQueries;
+    use RendersStatusPatches, ScopesAdminQueries;
 
     public function index(Request $request): View
     {
@@ -60,7 +62,7 @@ class DocumentRequestController extends Controller
         ]);
     }
 
-    public function update(Request $request, DocumentRequest $documentRequest): RedirectResponse
+    public function update(Request $request, DocumentRequest $documentRequest): RedirectResponse|JsonResponse
     {
         $this->guardInScope($documentRequest);
 
@@ -78,9 +80,26 @@ class DocumentRequestController extends Controller
                 : $documentRequest->released_at,
         ]);
 
-        return redirect()
-            ->route('admin.requests.show', $documentRequest)
-            ->with('success', $documentRequest->reference_no.' is now "'.$documentRequest->statusLabel().'".');
+        $fresh = $documentRequest->fresh(['processor:id,name']);
+
+        return $this->savedResponse(
+            $request,
+            'admin.requests.show',
+            $documentRequest->reference_no.' is now "'.$documentRequest->statusLabel().'".',
+            [
+                /* The header badge. */
+                [
+                    'selector' => '[data-status-cell]',
+                    'badge' => DocumentRequest::STATUS_BADGES[$fresh->status] ?? 'badge-neutral',
+                    'label' => $fresh->statusLabel(),
+                ],
+                /* Remarks, release stamp and processor - all move with status. */
+                ['selector' => '#requestDetails', 'view' => 'admin.requests.partials.details', 'data' => ['docRequest' => $fresh]],
+                /* The progress steps. */
+                ['selector' => '#requestTrail', 'view' => 'admin.requests.partials.trail', 'data' => ['docRequest' => $fresh]],
+            ],
+            ['documentRequest' => $documentRequest],
+        );
     }
 
     /**

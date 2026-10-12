@@ -51,6 +51,17 @@ class DocumentRequest extends Model
         'rejected' => 'Rejected',
     ];
 
+    /** Badge class per status - shared by the board, the detail page and the
+     *  ajax patch that rewrites either of them in place. */
+    public const STATUS_BADGES = [
+        'pending' => 'badge-cyan',
+        'under_review' => 'badge-amber',
+        'approved' => 'badge-green',
+        'ready_for_release' => 'badge-amber',
+        'released' => 'badge-green',
+        'rejected' => 'badge-rose',
+    ];
+
     public function resident(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');

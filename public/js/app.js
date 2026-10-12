@@ -113,6 +113,108 @@
         }
     });
 
+    /* ---------- ajax action forms (no page reload) ----------
+       Any form marked data-ajax is sent with fetch instead of navigating.
+       The server answers with JSON describing the record's new state, and the
+       matching [data-status-cell] is rewritten in place - so the official
+       keeps their scroll position, active filters and open modal instead of
+       being thrown back to the top of a freshly loaded page.
+
+       Progressive enhancement: without the attribute, or without JS, the form
+       posts and redirects exactly as it always did. */
+    function firstError(errors) {
+        for (var key in errors) {
+            if (Object.prototype.hasOwnProperty.call(errors, key) && errors[key].length) {
+                return errors[key][0];
+            }
+        }
+        return '';
+    }
+
+    function applyPatch(patch) {
+        if (!patch) return;
+        var list = Array.isArray(patch) ? patch : (patch.patches || [patch]);
+        list.forEach(function (p) {
+            if (!p || !p.selector) return;
+
+            var nodes = document.querySelectorAll(p.selector);
+
+            /* Attribute patch: keeps data-* in step with the record, e.g. the
+               button that prefills a modal must not offer yesterday's status. */
+            if (p.attrs) {
+                Object.keys(p.attrs).forEach(function (name) {
+                    nodes.forEach(function (node) { node.setAttribute(name, p.attrs[name]); });
+                });
+                return;
+            }
+
+            if (p.html == null) return;
+
+            /* querySelectorAll, not querySelector: a selector like
+               [data-status-cell] often marks several badges on one page and
+               every one of them must move together. */
+            nodes.forEach(function (node) { node.innerHTML = p.html; });
+        });
+    }
+
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form.matches('form[data-ajax]')) return;
+        if (e.defaultPrevented) return;   /* a data-confirm the user declined */
+
+        e.preventDefault();
+
+        var button = form.querySelector('[type="submit"]');
+        if (button) button.disabled = true;
+
+        var fields = new FormData(form);
+
+        /* POST, never the true verb. PHP only fills $_POST for a POST request,
+           so a real PATCH/DELETE with a multipart body drops _token and _method
+           on the floor and fails CSRF. Laravel reads the intended verb from
+           _method in the body, exactly as a plain form submit would. */
+        fetch(form.action, {
+            method: 'POST',
+            body: fields,
+            credentials: 'same-origin',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+            .then(function (res) {
+                return res.json()
+                    .catch(function () { return {}; })
+                    .then(function (data) { return { ok: res.ok, data: data }; });
+            })
+            .then(function (r) {
+                if (!r.ok) {
+                    var message = (r.data && r.data.message)
+                        || (r.data && r.data.errors && firstError(r.data.errors))
+                        || 'Nothing was saved.';
+                    window.toast(message, 'error');
+                    return;
+                }
+
+                window.toast(r.data.message || 'Saved.', 'success');
+                applyPatch(r.data.patches || r.data.patch);
+
+                /* Close the modal the form lived in, exactly the way the
+                   backdrop does, so the page scrolls again. */
+                var modal = form.closest('.modal');
+                if (modal && modal.classList.contains('open')) {
+                    modal.classList.remove('open');
+                    document.body.style.overflow = '';
+                }
+            })
+            .catch(function () {
+                window.toast('Could not reach the server - nothing was saved.', 'error');
+            })
+            .then(function () {
+                if (button) button.disabled = false;
+            });
+    });
+
     document.addEventListener('click', function (e) {
         var btn = e.target.closest('[data-confirm-click]');
         if (btn && !window.confirm(btn.getAttribute('data-confirm-click'))) {

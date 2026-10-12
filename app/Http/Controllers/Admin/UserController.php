@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\RendersStatusPatches;
 use App\Http\Controllers\Concerns\ScopesAdminQueries;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -12,12 +14,26 @@ use Illuminate\View\View;
 
 class UserController extends Controller
 {
-    use ScopesAdminQueries;
+    use RendersStatusPatches, ScopesAdminQueries;
 
     public const ROLES = [
         'admin' => 'Administrator',
         'staff' => 'Barangay Staff',
         'resident' => 'Resident',
+    ];
+
+    /** Role -> badge class. Shared by the board and the in-place patch. */
+    public const ROLE_BADGES = [
+        'admin' => 'badge-violet',
+        'staff' => 'badge-blue',
+        'resident' => 'badge-neutral',
+        'city_admin' => 'badge-neutral',   /* the board previously fell through to neutral */
+    ];
+
+    /** Status -> badge class. Shared by the board and the in-place patch. */
+    public const STATUS_BADGES = [
+        'active' => 'badge-green',
+        'suspended' => 'badge-rose',
     ];
 
     /** Reserved for the city account — only a city admin may assign it. */
@@ -66,7 +82,7 @@ class UserController extends Controller
         ]);
     }
 
-    public function update(Request $request, User $user): RedirectResponse
+    public function update(Request $request, User $user): RedirectResponse|JsonResponse
     {
         $me = $request->user();
 
@@ -97,12 +113,46 @@ class UserController extends Controller
 
         $user->update($data);
 
-        return redirect()
-            ->route('admin.users.index')
-            ->with('success', $user->name.' is now '.self::ROLES[$data['role']].' — '.self::STATUSES[$data['status']].'.');
+        $label = ($roles[$data['role']] ?? self::ROLES[$data['role']] ?? $data['role'])
+            .' — '.self::STATUSES[$data['status']];
+        $message = $user->name.' is now '.$label.'.';
+
+        return $this->savedResponse(
+            $request,
+            'admin.users.index',
+            $message,
+            [
+                /* The avatar colour follows the role, so the identity cell moves too. */
+                [
+                    'selector' => sprintf('[data-record-id="%d"] [data-identity-cell]', $user->id),
+                    'view' => 'admin.users.partials.identity',
+                    'data' => ['user' => $user, 'me' => $me->id],
+                ],
+                [
+                    'selector' => sprintf('[data-record-id="%d"] [data-role-cell]', $user->id),
+                    'badge' => self::ROLE_BADGES[$user->role] ?? 'badge-neutral',
+                    'label' => $roles[$user->role] ?? self::ROLES[$user->role] ?? ucfirst($user->role),
+                ],
+                [
+                    'selector' => $this->statusCellSelector($user->id),
+                    'badge' => self::STATUS_BADGES[$user->status] ?? 'badge-neutral',
+                    'label' => self::STATUSES[$user->status] ?? ucfirst($user->status),
+                ],
+                /* The Manage button prefills the modal from these, so they have
+                   to follow the save or the next open offers a stale value. */
+                [
+                    'selector' => sprintf('[data-record-id="%d"] [data-modal-open="manageUser"]', $user->id),
+                    'attrs' => [
+                        'data-role' => $user->role,
+                        'data-status' => $user->status,
+                        'data-name' => $user->name,
+                    ],
+                ],
+            ],
+        );
     }
 
-    public function destroy(Request $request, User $user): RedirectResponse
+    public function destroy(Request $request, User $user): RedirectResponse|JsonResponse
     {
         $me = $request->user();
 
@@ -160,8 +210,16 @@ class UserController extends Controller
             ->count() === 0;
     }
 
-    private function deny(string $message): RedirectResponse
+    /**
+     * A refusal the official can read. Ajax gets it as JSON so the toast can
+     * say why nothing changed; a plain post gets the usual redirect + flash.
+     */
+    private function deny(string $message): RedirectResponse|JsonResponse
     {
+        if (request()->expectsJson()) {
+            return response()->json(['message' => $message], 422);
+        }
+
         return redirect()->route('admin.users.index')->with('error', $message);
     }
 }

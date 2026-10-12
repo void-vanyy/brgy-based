@@ -8,23 +8,7 @@
 
 @section('content')
     @php
-        $actions = [
-            'waiting' => [
-                ['Call', 'called', 'btn-primary'],
-                ['Skip', 'skipped', 'btn-ghost'],
-                ['No show', 'no_show', 'btn-ghost'],
-            ],
-            'called' => [
-                ['Start', 'serving', 'btn-primary'],
-                ['Done', 'done', 'btn-success'],
-                ['Skip', 'skipped', 'btn-ghost'],
-            ],
-            'serving' => [
-                ['Done', 'done', 'btn-success'],
-                ['No show', 'no_show', 'btn-ghost'],
-            ],
-        ];
-        $nextInLine = $waiting->take(5);
+        $actions = \App\Http\Controllers\Admin\QueueController::ACTIONS;
     @endphp
 
     <div class="page-head">
@@ -57,16 +41,8 @@
                 </span>
             </div>
             <div class="card-body">
-                <div class="board">
-                    <div class="now-label">Now serving</div>
-                    <div class="now-num" id="boardNow">{{ $nowServing?->ticket_no ?? '—' }}</div>
-                    <div class="now-win" id="boardWin">{{ $nowServing?->window ?? 'No ticket called yet' }}</div>
-                    <div class="split">
-                        <div><span>Waiting</span><b id="boardWaiting">{{ $waiting->count() }}</b></div>
-                        <div><span>At window</span><b id="boardActive">{{ $active->count() }}</b></div>
-                        <div><span>Served</span><b id="boardServed">{{ $doneCount }}</b></div>
-                        <div><span>Skipped</span><b id="boardSkipped">{{ $skippedCount }}</b></div>
-                    </div>
+                <div class="board" id="queueBoard">
+                    @include('admin.queue.partials.board')
                 </div>
             </div>
         </section>
@@ -80,23 +56,7 @@
                 <p class="tiny dim mb-0">Tickets are pulled in the order they were issued — 5 minute average per transaction.</p>
 
                 <div class="stack-sm" id="nextList">
-                    @forelse ($nextInLine as $ticket)
-                        <div class="queue-row" id="next-{{ $ticket->id }}">
-                            <span class="qn">{{ $ticket->ticket_no }}</span>
-                            <span class="grow">
-                                {{ $ticket->name_on_ticket }}
-                                <span class="tiny dim"> · {{ $ticket->serviceName() }}</span>
-                            </span>
-                            <span class="tiny dim nowrap">~{{ $ticket->waitMinutes() }} min</span>
-                        </div>
-                    @empty
-                        <div class="empty" style="padding:1.4rem .6rem">
-                            <div class="ico"><x-icon name="check-circle" size="22" /></div>
-                            <h3>Line is clear</h3>
-                            <p class="mb-0">Issue a walk-in ticket below or wait for residents to file online.</p>
-                        </div>
-                    @endforelse
-                    <p id="nextEmpty" class="small dim mb-0" hidden>Line is clear — nobody is queued.</p>
+                    @include('admin.queue.partials.next-list')
                 </div>
 
                 <button type="button" class="btn btn-primary btn-block" data-modal-open="callNext">
@@ -115,39 +75,7 @@
             </div>
             <div class="card-body stack-sm">
                 <div class="stack-sm" id="waitingList">
-                    @forelse ($waiting as $ticket)
-                        <div class="queue-row" id="wt-{{ $ticket->id }}">
-                            <span class="qn">{{ $ticket->ticket_no }}</span>
-                            <span class="grow">
-                                {{ $ticket->name_on_ticket }}
-                                <span class="tiny dim">
-                                    · {{ $ticket->serviceName() }}
-                                    · #{{ $ticket->positionInLine() }} in line
-                                </span>
-                            </span>
-                            <span class="tiny dim nowrap">~{{ $ticket->waitMinutes() }} min</span>
-
-                            <span class="row shrink-0" style="gap:.35rem">
-                                @foreach ($actions['waiting'] as $action)
-                                    <form method="POST" action="{{ route('admin.queue.update', $ticket) }}">
-                                        @csrf
-                                        @method('PATCH')
-                                        <input type="hidden" name="status" value="{{ $action[1] }}">
-                                        <button type="submit" class="btn btn-sm {{ $action[2] }}">{{ $action[0] }}</button>
-                                    </form>
-                                @endforeach
-                            </span>
-                        </div>
-                    @empty
-                        <div class="empty" style="padding:1.6rem .6rem">
-                            <div class="ico"><x-icon name="users" size="22" /></div>
-                            <h3>Nobody is waiting</h3>
-                            <p class="mb-0">The queue is empty — call the next resident as they arrive.</p>
-                        </div>
-                    @endforelse
-                    <p id="waitingEmpty" class="small dim mb-0" hidden>
-                        Nobody is waiting — the line is clear.
-                    </p>
+                    @include('admin.queue.partials.waiting-list')
                 </div>
             </div>
         </section>
@@ -159,36 +87,7 @@
             </div>
             <div class="card-body stack-sm">
                 <div class="stack-sm" id="activeList">
-                    @forelse ($active as $ticket)
-                        <div class="queue-row" id="st-{{ $ticket->id }}">
-                            <span class="qn">{{ $ticket->ticket_no }}</span>
-                            <span class="grow">
-                                {{ $ticket->name_on_ticket }}
-                                <span class="tiny dim"> · {{ $ticket->serviceName() }}{{ $ticket->window ? ' · '.$ticket->window : '' }}</span>
-                            </span>
-                            <span class="badge {{ $badge[$ticket->status] ?? 'badge-amber' }}">{{ $ticket->statusLabel() }}</span>
-
-                            <span class="row shrink-0" style="gap:.35rem">
-                                @foreach ($actions[$ticket->status] ?? [] as $action)
-                                    <form method="POST" action="{{ route('admin.queue.update', $ticket) }}">
-                                        @csrf
-                                        @method('PATCH')
-                                        <input type="hidden" name="status" value="{{ $action[1] }}">
-                                        <button type="submit" class="btn btn-sm {{ $action[2] }}">{{ $action[0] }}</button>
-                                    </form>
-                                @endforeach
-                            </span>
-                        </div>
-                    @empty
-                        <div class="empty" style="padding:1.6rem .6rem">
-                            <div class="ico"><x-icon name="ticket" size="22" /></div>
-                            <h3>Window is free</h3>
-                            <p class="mb-0">Called and in-progress tickets show up here.</p>
-                        </div>
-                    @endforelse
-                    <p id="activeEmpty" class="small dim mb-0" hidden>
-                        No one is at the window right now.
-                    </p>
+                    @include('admin.queue.partials.active-list')
                 </div>
             </div>
         </section>
@@ -196,46 +95,8 @@
 
     {{-- ==================== finished + walk-in ==================== --}}
     <div class="grid grid-2">
-        <section class="card">
-            <div class="card-head">
-                <h2 class="card-title"><x-icon name="clipboard" /> Finished today</h2>
-                <span class="badge badge-green">{{ $doneCount }} served</span>
-            </div>
-
-            @if ($finished->isEmpty())
-                <div class="empty">
-                    <div class="ico"><x-icon name="clipboard" size="22" /></div>
-                    <h3>Nothing completed yet</h3>
-                    <p class="mb-0">Tickets move here once they are marked done, skipped or no-show.</p>
-                </div>
-            @else
-                <div class="table-wrap">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Ticket</th>
-                                <th>Resident</th>
-                                <th>Service</th>
-                                <th>Status</th>
-                                <th>Closed</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($finished as $ticket)
-                                <tr>
-                                    <td class="mono nowrap">{{ $ticket->ticket_no }}</td>
-                                    <td class="strong">{{ $ticket->name_on_ticket }}</td>
-                                    <td class="tiny dim nowrap">{{ $ticket->serviceName() }}</td>
-                                    <td><span class="badge {{ $badge[$ticket->status] ?? 'badge-neutral' }}">{{ $ticket->statusLabel() }}</span></td>
-                                    <td class="tiny dim nowrap">
-                                        {{ ($ticket->served_at ?? $ticket->updated_at)->format('g:i A') }}
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @endif
+        <section class="card" id="finishedCard">
+            @include('admin.queue.partials.finished')
         </section>
 
         <section class="card">

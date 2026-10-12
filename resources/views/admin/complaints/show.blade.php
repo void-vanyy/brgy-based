@@ -14,27 +14,9 @@
         $priorityLabels = \App\Http\Controllers\Admin\ComplaintController::PRIORITIES;
         $categories = \App\Http\Controllers\Admin\ComplaintController::CATEGORIES;
 
-        $events = collect([
-            [
-                'title' => 'Complaint filed',
-                'status' => 'received',
-                'label' => 'Received',
-                'note' => \Illuminate\Support\Str::limit($complaint->description, 420),
-                'author' => $complaint->resident?->name ?? 'Resident',
-                'at' => $complaint->created_at,
-            ],
-        ]);
-
-        foreach ($complaint->updates->sortBy('id') as $update) {
-            $events->push([
-                'title' => $update->title ?: 'Case updated',
-                'status' => $update->status,
-                'label' => $statusLabels[$update->status] ?? ucfirst(str_replace('_', ' ', $update->status)),
-                'note' => $update->note,
-                'author' => $update->author?->name ?? 'Barangay office',
-                'at' => $update->created_at,
-            ]);
-        }
+        // One definition of the tracker, shared with ComplaintController so an
+        // in-place ajax refresh of the card matches this first render.
+        $events = \App\Support\ComplaintTracker::events($complaint);
 
         $hasCoords = is_numeric($complaint->latitude) && is_numeric($complaint->longitude);
         $resident = $complaint->resident;
@@ -51,9 +33,11 @@
             </p>
         </div>
         <div class="row">
-            <span class="badge {{ $priorityBadge[$complaint->priority] ?? 'badge-neutral' }}">{{ $priorityLabels[$complaint->priority] ?? $complaint->priority }} priority</span>
-            <span class="badge {{ $statusBadge[$complaint->status] ?? 'badge-neutral' }}">{{ $statusLabels[$complaint->status] ?? $complaint->status }}</span>
-            <a href="{{ route('admin.complaints.index') }}" class="btn btn-ghost">
+            {{-- Rewritten in place after an ajax status save; see ComplaintController. --}}
+        <span class="row" data-case-badges>
+            @include('admin.complaints.partials.case-badges')
+        </span>
+        <a href="{{ route('admin.complaints.index') }}" class="btn btn-ghost">
                 <x-icon name="chevron" size="15" /> Back to list
             </a>
         </div>
@@ -76,11 +60,8 @@
 
                     <hr class="divider">
 
-                    <div class="detail-list">
-                        <div class="d"><dt>Category</dt><dd>{{ $categories[$complaint->category] ?? $complaint->category }}</dd></div>
-                        <div class="d"><dt>Location</dt><dd>{{ $complaint->location }}</dd></div>
-                        <div class="d"><dt>Purok</dt><dd>{{ $complaint->purok ?: 'Not specified' }}</dd></div>
-                        <div class="d"><dt>Filed</dt><dd>{{ $complaint->created_at->format('M j, Y g:i A') }}</dd></div>
+                    <div class="detail-list" id="caseFacts">
+                        @include('admin.complaints.partials.case-facts')
                     </div>
 
                     @if ($complaint->admin_remarks)
@@ -98,7 +79,7 @@
                     <h2 class="card-title"><x-icon name="sliders" /> Update case status</h2>
                     <span class="tiny dim">Applies immediately and is logged in the tracker</span>
                 </div>
-                <form method="POST" action="{{ route('admin.complaints.update', $complaint) }}">
+                <form method="POST" data-ajax action="{{ route('admin.complaints.update', $complaint) }}">
                     @csrf
                     @method('PATCH')
 
@@ -157,59 +138,8 @@
             </section>
 
             {{-- tracker --}}
-            <section class="card">
-                <div class="card-head">
-                    <h2 class="card-title"><x-icon name="clock" /> Progress tracker</h2>
-                    <span class="badge badge-neutral">{{ $events->count() }} entr{{ $events->count() === 1 ? 'y' : 'ies' }}</span>
-                </div>
-
-                <div class="card-body">
-                    <div class="timeline">
-                        @foreach ($events as $event)
-                            <div class="timeline-item {{ $loop->last
-                                ? ($complaint->status === 'closed' ? 'reject' : ($complaint->status === 'resolved' ? 'done' : 'active'))
-                                : 'done' }}">
-                                <div class="timeline-head">
-                                    <span class="timeline-title">{{ $event['title'] }}</span>
-                                    <span class="badge {{ $statusBadge[$event['status']] ?? 'badge-neutral' }}">{{ $event['label'] }}</span>
-                                    <span class="timeline-time">{{ $event['at']->format('M j, g:i A') }}</span>
-                                </div>
-                                @if ($event['note'])
-                                    <div class="timeline-note">{{ $event['note'] }}</div>
-                                @endif
-                                <div class="tiny dim mt-1">Logged by {{ $event['author'] }}</div>
-                            </div>
-                        @endforeach
-                    </div>
-
-                    <hr class="divider">
-
-                    <h3 class="small bold">Add a note without changing the status</h3>
-                    <form method="POST" action="{{ route('admin.complaints.note', $complaint) }}" class="mt-2">
-                        @csrf
-
-                        <div class="field">
-                            <label class="label" for="note_title">Note title <span class="dim">(optional)</span></label>
-                            <input id="note_title" type="text" name="title" class="input" maxlength="140"
-                                placeholder="e.g. Called the complainant" value="{{ old('title') }}">
-                            @error('title')<div class="error">{{ $message }}</div>@enderror
-                        </div>
-
-                        <div class="field">
-                            <label class="label" for="note_body">Details <span class="req">*</span></label>
-                            <textarea id="note_body" name="note" class="textarea" rows="3"
-                                placeholder="What happened, who was contacted, what comes next…">{{ old('note') }}</textarea>
-                            @error('note')<div class="error">{{ $message }}</div>@enderror
-                        </div>
-
-                        <div class="row">
-                            <button type="submit" class="btn btn-accent">
-                                <x-icon name="send" size="15" /> Add to tracker
-                            </button>
-                            <span class="tiny dim">Notes keep the resident informed but leave the status untouched.</span>
-                        </div>
-                    </form>
-                </div>
+            <section class="card" id="caseTracker">
+                @include('admin.complaints.partials.tracker')
             </section>
         </div>
 

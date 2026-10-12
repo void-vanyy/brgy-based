@@ -94,7 +94,7 @@
                             </thead>
                             <tbody>
                                 @foreach ($bookings as $booking)
-                                    <tr>
+                                    <tr data-record-id="{{ $booking->id }}">
                                         <td class="mono nowrap">{{ $booking->time_slot }}</td>
                                         <td class="mono tiny nowrap">{{ $booking->reference_no }}</td>
                                         <td class="strong">
@@ -105,11 +105,13 @@
                                             {{ $booking->resident?->name ?? 'Resident' }}
                                             <div class="tiny dim">{{ $booking->resident?->purok ?: '—' }}</div>
                                         </td>
-                                        <td>
-                                            <span class="badge {{ $badge[$booking->status] ?? 'badge-neutral' }}">{{ $booking->statusLabel() }}</span>
-                                            @if ($booking->remarks)
-                                                <div class="tiny dim">{{ \Illuminate\Support\Str::limit($booking->remarks, 45) }}</div>
-                                            @endif
+                                        {{-- Rewritten in place after an ajax save; see app.js. --}}
+                                        <td data-status-cell>
+                                            @include('admin.partials.status-cell', [
+                                                'badge' => $badge[$booking->status] ?? 'badge-neutral',
+                                                'label' => $booking->statusLabel(),
+                                                'remark' => $booking->remarks,
+                                            ])
                                         </td>
                                         <td class="nowrap tiny dim">{{ $booking->processor?->name ?? '—' }}</td>
                                         <td class="right nowrap">
@@ -145,7 +147,7 @@
                 <button type="button" class="modal-x" data-modal-close>&times;</button>
             </div>
 
-            <form method="POST" id="apptForm" action="{{ route('admin.appointments.index') }}">
+            <form method="POST" id="apptForm" data-ajax action="{{ route('admin.appointments.index') }}">
                 @csrf
                 @method('PATCH')
 
