@@ -72,8 +72,8 @@
                 </div>
                 <div class="card-body">
                     <div class="detail-list">
-                        <div class="d"><dt>Centre</dt><dd>Barangay Hall, Purok 1</dd></div>
-                        <div class="d"><dt>Zoom</dt><dd class="mono">16 · street level</dd></div>
+                        <div class="d"><dt>Centre</dt><dd>Santa Rosa City, Laguna</dd></div>
+                        <div class="d"><dt>Zoom</dt><dd class="mono">{{ (int) $zoom }} &middot; city view</dd></div>
                         <div class="d"><dt>Refresh</dt><dd>Every 30 seconds</dd></div>
                         <div class="d"><dt>Data source</dt><dd>Resident complaints</dd></div>
                     </div>
@@ -102,8 +102,9 @@
         var host = document.getElementById('map');
         if (!host || typeof L === 'undefined') return;
 
-        var CENTER = [14.6042, 121.0410];
-        var ZOOM = 16;
+        /* Santa Rosa City centre, supplied by Resident\MapController. */
+        var CENTER = [{{ $latitude }}, {{ $longitude }}];
+        var ZOOM = {{ (int) $zoom }};
 
         var esc = function (value) {
             return String(value == null ? '' : value)

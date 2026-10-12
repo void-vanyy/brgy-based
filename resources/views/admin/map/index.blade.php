@@ -122,7 +122,10 @@
                     closed: '#fb7185'
                 };
 
-                var map = L.map(el).setView([14.6042, 121.0410], 16);
+                /* MapController supplies the centre: the official's barangay, or the
+                   whole city for the city office. Do not hardcode a location here. */
+                var CENTER = [{{ $latitude }}, {{ $longitude }}];
+                var map = L.map(el).setView(CENTER, {{ (int) $zoom }});
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     maxZoom: 19,
                     attribution: '&copy; OpenStreetMap contributors'

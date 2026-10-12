@@ -230,26 +230,35 @@
             status: @json($statuses[$complaint->status] ?? $complaint->status)
         };
 
-        var map = L.map(host).setView([14.6042, 121.0410], 16);
+        /* Open on the incident itself. A complaint filed without a pin falls
+           back to the Santa Rosa city centre rather than somewhere unrelated. */
+        var hasCoords = data.lat != null && data.lng != null
+            && isFinite(Number(data.lat)) && isFinite(Number(data.lng));
+        var START = hasCoords
+            ? [Number(data.lat), Number(data.lng)]
+            : [{{ \App\Models\Barangay::CITY_CENTER[0] }}, {{ \App\Models\Barangay::CITY_CENTER[1] }}];
+
+        var map = L.map(host).setView(START, hasCoords ? 17 : {{ \App\Models\Barangay::CITY_ZOOM }});
 
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
-        L.circleMarker([data.lat, data.lng], {
-            radius: 9,
-            color: '#22d3ee',
-            weight: 3,
-            fillColor: '#22d3ee',
-            fillOpacity: 0.35
-        }).addTo(map).bindPopup(
-            '<strong>' + data.title + '</strong><br>' +
-            '<span class="mono dim">' + data.ref + '</span><br>' +
-            data.location + '<br><span class="muted">' + data.status + '</span>'
-        );
+        if (hasCoords) {
+            L.circleMarker([Number(data.lat), Number(data.lng)], {
+                radius: 9,
+                color: '#22d3ee',
+                weight: 3,
+                fillColor: '#22d3ee',
+                fillOpacity: 0.35
+            }).addTo(map).bindPopup(
+                '<strong>' + data.title + '</strong><br>' +
+                '<span class="mono dim">' + data.ref + '</span><br>' +
+                data.location + '<br><span class="muted">' + data.status + '</span>'
+            );
+        }
 
-        map.setView([data.lat, data.lng], 17);
         setTimeout(function () { map.invalidateSize(); }, 260);
     });
 </script>

@@ -377,7 +377,7 @@
                         {{ $barangay }} &middot; {{ $address }}
                         @if ($contact) &middot; {{ $contact }} @endif
                     </span>
-                    <span class="mono tiny dim">center 14.6042, 121.0410 &middot; zoom 16</span>
+                    <span class="mono tiny dim">center {{ \App\Models\Barangay::CITY_CENTER[0] }}, {{ \App\Models\Barangay::CITY_CENTER[1] }} &middot; zoom {{ \App\Models\Barangay::CITY_ZOOM }}</span>
                 </div>
             </div>
 
@@ -505,8 +505,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var barangayName = {!! json_encode($barangay) !!};
     var barangayAddress = {!! json_encode($address) !!};
-    var CENTER = [14.6042, 121.0410];
-    var map = L.map(mapEl, { scrollWheelZoom: false }).setView(CENTER, 16);
+    /* Santa Rosa City centre — kept in Barangay::CITY_CENTER so the landing page
+       and both portals always open on the same place. */
+    var CENTER = [{{ \App\Models\Barangay::CITY_CENTER[0] }}, {{ \App\Models\Barangay::CITY_CENTER[1] }}];
+    var map = L.map(mapEl, { scrollWheelZoom: false }).setView(CENTER, {{ \App\Models\Barangay::CITY_ZOOM }});
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
