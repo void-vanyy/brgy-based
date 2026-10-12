@@ -34,6 +34,8 @@
         </div>
     </div>
 
+    @include('partials.status-legend')
+
     {{-- ============ status tabs ============ --}}
     <div class="tabs">
         <a href="{{ route('admin.requests.index') }}" class="tab {{ ! in_array($currentStatus, array_keys($statuses), true) ? 'active' : '' }}">

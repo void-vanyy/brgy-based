@@ -33,6 +33,7 @@
 
     --sidebar-w:     258px;
     --topbar-h:      66px;
+    --site-nav-h:    62px;
 
     --font: "Segoe UI", Inter, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
     --mono: "Cascadia Code", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -778,6 +779,11 @@ p:last-child { margin-bottom: 0; }
 .user-pill .nm { font-size: .85rem; font-weight: 600; color: var(--text); line-height: 1.2; }
 .user-pill .rl { font-size: .7rem; color: var(--dim); font-family: var(--mono); text-transform: uppercase; letter-spacing: .08em; }
 
+/* The word "Sign out" is dropped on narrow viewports, where the topbar is
+   already carrying the hamburger, the scope pill and the account pill. */
+.signout-label { display: none; }
+@media (min-width: 861px) { .signout-label { display: inline; } }
+
 /* =========================================================================
    Timeline (complaint tracker)
    ========================================================================= */
@@ -898,6 +904,7 @@ p:last-child { margin-bottom: 0; }
     justify-content: space-between;
     gap: 1rem;
     padding: .85rem clamp(1rem, 4vw, 2.6rem);
+    min-height: var(--site-nav-h);
     background: rgba(6, 9, 15, .82);
     backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--border);
@@ -1224,6 +1231,192 @@ p:last-child { margin-bottom: 0; }
 .detail-list .d:last-child { border-bottom: none; padding-bottom: 0; }
 .detail-list .d dt { color: var(--dim); font-size: .79rem; }
 .detail-list .d dd { margin: 0; color: var(--text); text-align: right; font-weight: 550; }
+
+/* =========================================================================
+   First-run clarity aids
+   ========================================================================= */
+
+/* --- jump bar: lets a first-time visitor skip the long landing page --- */
+.section[id] { scroll-margin-top: calc(var(--site-nav-h) + 58px); }
+
+.jump-nav {
+    position: sticky;
+    top: var(--site-nav-h);
+    z-index: 70;
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .55rem clamp(1rem, 4vw, 2.6rem);
+    background: rgba(9, 13, 22, .94);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.jump-nav::-webkit-scrollbar { display: none; }
+.jump-nav .jump-label {
+    font-family: var(--mono);
+    font-size: .64rem;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-right: .5rem;
+    white-space: nowrap;
+}
+.jump-nav a {
+    display: inline-flex;
+    align-items: center;
+    gap: .38rem;
+    padding: .34rem .7rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--muted);
+    font-size: .79rem;
+    font-weight: 550;
+    white-space: nowrap;
+    transition: .15s;
+}
+.jump-nav a:hover {
+    border-color: rgba(34, 211, 238, .45);
+    color: var(--primary);
+    text-decoration: none;
+}
+
+/* --- colour key: collapsed so it explains badges without adding noise --- */
+.legend {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--panel-2);
+    margin-bottom: 1rem;
+}
+.legend > summary {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .6rem .85rem;
+    cursor: pointer;
+    list-style: none;
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--muted);
+    transition: color .15s;
+}
+.legend > summary::-webkit-details-marker { display: none; }
+.legend > summary:hover { color: var(--primary); }
+.legend > summary .chev { transition: transform .18s ease; margin-left: auto; }
+.legend[open] > summary .chev { transform: rotate(180deg); }
+.legend .legend-body {
+    padding: .2rem .85rem .85rem;
+    border-top: 1px dashed var(--border);
+    padding-top: .75rem;
+}
+.legend-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: .7rem 1.1rem;
+    margin: 0;
+}
+.legend-item { display: flex; align-items: flex-start; gap: .55rem; }
+.legend-item .badge { flex-shrink: 0; margin-top: .1rem; }
+.legend-item b { display: block; color: var(--text); font-size: .8rem; font-weight: 600; line-height: 1.3; }
+.legend-item span { display: block; color: var(--dim); font-size: .75rem; line-height: 1.45; }
+.legend-note { margin: .7rem 0 0; font-size: .75rem; color: var(--dim); }
+
+/* --- "needs your attention" strip: the first-timer's starting point --- */
+.attn {
+    display: flex;
+    align-items: center;
+    gap: .8rem;
+    flex-wrap: wrap;
+    padding: .85rem 1rem;
+    margin-bottom: 1.15rem;
+    border: 1px solid rgba(34, 211, 238, .28);
+    border-radius: var(--radius);
+    background: linear-gradient(100deg, rgba(34, 211, 238, .09), rgba(139, 92, 246, .05));
+}
+.attn.peace { border-color: var(--border); background: var(--panel-2); }
+.attn-title {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    font-size: .86rem;
+    font-weight: 650;
+    color: var(--text);
+    margin-right: .2rem;
+}
+.attn-links { display: flex; gap: .5rem; flex-wrap: wrap; }
+.attn-link {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    padding: .38rem .75rem;
+    border-radius: 999px;
+    border: 1px solid var(--border-2);
+    background: var(--panel);
+    color: var(--muted);
+    font-size: .8rem;
+    font-weight: 550;
+    transition: .15s;
+}
+.attn-link:hover { border-color: rgba(34, 211, 238, .5); color: var(--primary); text-decoration: none; }
+.attn-link b {
+    font-family: var(--mono);
+    font-size: .76rem;
+    padding: 0 .38rem;
+    border-radius: 999px;
+    background: rgba(34, 211, 238, .16);
+    color: var(--primary);
+}
+.attn-link.hot b { background: rgba(251, 113, 133, .18); color: var(--danger); }
+.attn-link.quiet { opacity: .55; pointer-events: none; }
+.attn-link.quiet b { background: var(--panel-3); color: var(--muted); }
+
+/* --- welcome card shown once, to a resident with no activity yet --- */
+.welcome {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(34, 211, 238, .3);
+    border-radius: var(--radius-lg);
+    background:
+        radial-gradient(700px 200px at 8% -40%, rgba(34, 211, 238, .16), transparent 70%),
+        radial-gradient(500px 220px at 92% 140%, rgba(139, 92, 246, .16), transparent 70%),
+        var(--panel);
+    padding: clamp(1.3rem, 3vw, 1.9rem);
+    margin-bottom: 1.25rem;
+}
+.welcome h2 { font-size: clamp(1.15rem, 2.4vw, 1.45rem); margin: .5rem 0 .5rem; letter-spacing: -.02em; }
+.welcome p { color: var(--muted); max-width: 74ch; margin: 0; font-size: .92rem; }
+.welcome-track {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: .8rem;
+    margin-top: 1.15rem;
+}
+.welcome-step {
+    display: flex;
+    flex-direction: column;
+    gap: .4rem;
+    padding: .85rem .9rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: rgba(6, 9, 15, .55);
+}
+.welcome-step .n {
+    font-family: var(--mono);
+    font-size: .68rem;
+    font-weight: 800;
+    letter-spacing: .14em;
+    color: var(--primary);
+}
+.welcome-step strong { font-size: .88rem; color: var(--text); }
+.welcome-step span { font-size: .77rem; color: var(--dim); line-height: 1.5; }
+.welcome-actions { display: flex; gap: .7rem; flex-wrap: wrap; margin-top: 1.2rem; }
+
+@media (max-width: 560px) {
+    .jump-nav .jump-label { display: none; }
+    .attn { flex-direction: column; align-items: flex-start; }
+}
 
 /* =========================================================================
    Responsive

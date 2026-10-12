@@ -51,6 +51,33 @@
         </div>
     </div>
 
+    {{-- ============ start here: the one card a newcomer reads first ============ --}}
+    @php ($pendingWork = collect($attention)->filter(fn (array $a) => $a['count'] > 0))
+
+    @if ($pendingWork->isEmpty())
+        <div class="attn peace">
+            <span class="attn-title"><x-icon name="check-circle" size="17" /> All clear</span>
+            <span class="small muted" style="margin:0">
+                Nothing is waiting on you. Anything residents file shows up here straight away.
+            </span>
+        </div>
+    @else
+        <div class="attn">
+            <span class="attn-title"><x-icon name="flag" size="17" /> Needs your attention</span>
+            <div class="attn-links">
+                @foreach ($pendingWork as $item)
+                    <a href="{{ $item['href'] }}" class="attn-link {{ ($item['hot'] ?? false) ? 'hot' : '' }}">
+                        <b>{{ $item['count'] }}</b>
+                        {{ $item['label'] }}
+                        @if (! empty($item['hint']))
+                            <span style="color:var(--danger)">&middot; {{ $item['hint'] }}</span>
+                        @endif
+                    </a>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     {{-- ============ city pulse (city admin only) ============ --}}
     @if ($isCityWide)
         <section class="card mb-3">
@@ -161,7 +188,18 @@
                 <div class="board">
                     <div class="now-label">Now serving</div>
                     <div class="now-num">{{ $nowServing?->ticket_no ?? '—' }}</div>
-                    <div class="now-win">{{ $nowServing?->window ?? 'No ticket called yet' }}</div>
+                    {{-- Never claim "no ticket called yet" underneath a ticket
+                         that is on screen - that pair is what made the board
+                         look broken to a first-time viewer. --}}
+                    <div class="now-win">
+                        @if (! $nowServing)
+                            No ticket called yet
+                        @elseif ($nowServing->window)
+                            {{ $nowServing->window }} &middot; {{ $nowServing->serviceName() }}
+                        @else
+                            {{ $nowServing->serviceName() }} &middot; window not assigned
+                        @endif
+                    </div>
                     <div class="split">
                         <div><span>Waiting</span><b>{{ $waiting }}</b></div>
                         <div><span>Served</span><b>{{ $servedToday }}</b></div>

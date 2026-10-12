@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\Appointment;
+use App\Models\Barangay;
 use App\Models\Complaint;
 use App\Models\DocumentRequest;
 use App\Models\QueueTicket;
@@ -32,13 +33,43 @@ class AppServiceProvider extends ServiceProvider
             }
 
             if ($user->isAdmin()) {
+                /* Mirror ScopesAdminQueries::effectiveBarangayId(): an official's
+                   own barangay wins, otherwise a city admin's ?barangay= filter.
+
+                   Without this the sidebar counted records across all 18
+                   barangays while every list underneath it showed one - so the
+                   same number appeared twice with two different answers.
+
+                   The four totals also match DashboardController exactly, and
+                   "waiting" now means only tickets actually in line, rather
+                   than silently folding in the ones already at a window. */
+                $scopeId = ($user->isBarangayScoped() ? $user->barangay_id : null)
+                    ?? Barangay::requestedFilterId();
+
+                $byResident = fn ($query) => $scopeId === null
+                    ? $query
+                    : $query->whereHas(
+                        'resident',
+                        fn ($inner) => $inner->where('barangay_id', $scopeId)
+                    );
+
+                $byBarangay = fn ($query) => $scopeId === null
+                    ? $query
+                    : $query->where('barangay_id', $scopeId);
+
                 $counts = [
-                    'open_complaints' => Complaint::whereIn('status', ['received', 'in_progress', 'on_hold'])->count(),
-                    'pending_docs' => DocumentRequest::whereIn('status', ['pending', 'under_review'])->count(),
-                    'pending_appts' => Appointment::where('status', 'pending')
-                        ->whereDate('appointment_date', '>=', now()->toDateString())
+                    'open_complaints' => $byBarangay(Complaint::query())
+                        ->whereIn('status', ['received', 'in_progress', 'on_hold'])
                         ->count(),
-                    'waiting' => QueueTicket::forDate()->whereIn('status', ['waiting', 'called', 'serving'])->count(),
+                    'pending_docs' => $byResident(DocumentRequest::query())
+                        ->whereIn('status', ['pending', 'under_review'])
+                        ->count(),
+                    'pending_appts' => $byResident(Appointment::query())
+                        ->where('status', 'pending')
+                        ->count(),
+                    'waiting' => $byResident(QueueTicket::forDate())
+                        ->where('status', 'waiting')
+                        ->count(),
                 ];
             } else {
                 $counts = [

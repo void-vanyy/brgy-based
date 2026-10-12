@@ -23,6 +23,13 @@
         @include('layouts.nav.'.$portal)
 
         <div class="sidebar-foot">
+            {{-- Account and exit controls live together at the bottom, the
+                 place people already look for them. --}}
+            @if ($portal === 'resident')
+                <a href="{{ route('resident.profile.edit') }}" class="nav-item {{ request()->routeIs('resident.profile.*') ? 'active' : '' }}">
+                    <x-icon name="user" /> <span>My profile</span>
+                </a>
+            @endif
             <a href="{{ route('home') }}" class="nav-item">
                 <x-icon name="compass" /> <span>Public website</span>
             </a>
@@ -78,15 +85,25 @@
                 <div class="row shrink-0">@yield('topbar-actions')</div>
             @endif
 
+            {{-- The avatar reads as "my account", so it must never sign someone
+                 out behind their back. It now only shows who is signed in -
+                 and opens the profile in the resident portal - while signing
+                 out is its own, unmistakably labelled control. --}}
+            @if ($portal === 'resident')
+                <a href="{{ route('resident.profile.edit') }}" class="user-pill shrink-0" title="Open my profile">
+                    <span class="avatar sm">{{ auth()->user()->initials }}</span>
+                    <x-icon name="user" size="16" />
+                </a>
+            @else
+                <span class="user-pill shrink-0" title="Signed in as {{ auth()->user()->name }}">
+                    <span class="avatar sm">{{ auth()->user()->initials }}</span>
+                </span>
+            @endif
+
             <form method="POST" action="{{ route('logout') }}" class="shrink-0">
                 @csrf
-                <button type="submit" class="user-pill" title="Sign out">
-                    <span class="avatar sm">{{ auth()->user()->initials }}</span>
-                    <span class="hidden" style="display:block">
-                        <span class="nm">{{ auth()->user()->name }}</span>
-                        <span class="rl">{{ auth()->user()->role }}</span>
-                    </span>
-                    <x-icon name="logout" size="16" />
+                <button type="submit" class="btn btn-ghost btn-sm" title="Sign out of this account">
+                    <x-icon name="logout" size="15" /> <span class="signout-label">Sign out</span>
                 </button>
             </form>
         </header>

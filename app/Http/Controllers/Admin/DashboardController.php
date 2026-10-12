@@ -87,6 +87,42 @@ class DashboardController extends Controller
             ->whereIn('status', ['received', 'in_progress', 'on_hold'])
             ->count();
 
+        /* What an official should act on first, in priority order.
+
+           The dashboard otherwise opens with a bar chart and six numbers,
+           which is a lot to decode on a first visit. This strip answers the
+           only question a newcomer has - "where do I start?" - and every tile
+           links to the list already filtered to that work.
+
+           $scope keeps a drilled-down city admin (?barangay=) on the same
+           barangay, so these links never contradict the scope pill above. */
+        $scope = ($f = $this->requestedBarangayId()) === null ? [] : ['barangay' => $f];
+
+        $attention = [
+            [
+                'label' => 'complaints need a first look',
+                'count' => $openComplaints,
+                'hot'   => $urgent > 0,
+                'hint'  => $urgent > 0 ? $urgent.' urgent' : null,
+                'href'  => route('admin.complaints.index', $scope + ['status' => 'received']),
+            ],
+            [
+                'label' => 'document requests awaiting review',
+                'count' => $pendingDocs,
+                'href'  => route('admin.requests.index', $scope + ['status' => 'pending']),
+            ],
+            [
+                'label' => 'appointments awaiting confirmation',
+                'count' => $pendingAppts,
+                'href'  => route('admin.appointments.index', $scope + ['status' => 'pending']),
+            ],
+            [
+                'label' => 'residents waiting in the queue',
+                'count' => $waiting,
+                'href'  => route('admin.queue.index', $scope),
+            ],
+        ];
+
         /* A city admin's headline numbers are a flat sum across 18 barangays,
            which hides where the work actually is. The pulse strip breaks that
            sum back down so a heavy barangay is visible without leaving the
@@ -108,6 +144,8 @@ class DashboardController extends Controller
             'bars' => $bars,
             'peakBar' => $peakBar,
             'total' => $total,
+            'attention' => $attention,
+            'urgent' => $urgent,
             'cityPulse' => $cityPulse,
             'scopeLabel' => $this->scopeLabel(),
             'stats' => [
@@ -117,7 +155,7 @@ class DashboardController extends Controller
                     'tone' => 'rose',
                     'meta' => $urgent.' urgent waiting for action',
                     'icon' => 'alert',
-                    'href' => route('admin.complaints.index', ['status' => 'received']),
+                    'href' => route('admin.complaints.index', $scope + ['status' => 'received']),
                 ],
                 [
                     'label' => 'Document requests',
@@ -125,7 +163,7 @@ class DashboardController extends Controller
                     'tone' => 'violet',
                     'meta' => 'Pending review at the records desk',
                     'icon' => 'file',
-                    'href' => route('admin.requests.index', ['status' => 'pending']),
+                    'href' => route('admin.requests.index', $scope + ['status' => 'pending']),
                 ],
                 [
                     'label' => 'Appointments',
@@ -133,7 +171,7 @@ class DashboardController extends Controller
                     'tone' => 'amber',
                     'meta' => 'Awaiting confirmation',
                     'icon' => 'calendar',
-                    'href' => route('admin.appointments.index', ['status' => 'pending']),
+                    'href' => route('admin.appointments.index', $scope + ['status' => 'pending']),
                 ],
                 [
                     'label' => 'Waiting in queue',
@@ -141,7 +179,7 @@ class DashboardController extends Controller
                     'tone' => 'cyan',
                     'meta' => 'Residents served today: '.$servedToday,
                     'icon' => 'ticket',
-                    'href' => route('admin.queue.index'),
+                    'href' => route('admin.queue.index', $scope),
                 ],
                 [
                     'label' => 'Registered residents',
@@ -149,7 +187,7 @@ class DashboardController extends Controller
                     'tone' => 'green',
                     'meta' => 'Accounts in the community roster',
                     'icon' => 'users',
-                    'href' => route('admin.users.index', ['role' => 'resident']),
+                    'href' => route('admin.users.index', $scope + ['role' => 'resident']),
                 ],
                 [
                     'label' => 'Open job posts',
@@ -157,7 +195,7 @@ class DashboardController extends Controller
                     'tone' => 'blue',
                     'meta' => 'Livelihood listings live now',
                     'icon' => 'briefcase',
-                    'href' => route('admin.jobs.index', ['status' => 'open']),
+                    'href' => route('admin.jobs.index', $scope + ['status' => 'open']),
                 ],
             ],
             'nowServing' => $nowServing,

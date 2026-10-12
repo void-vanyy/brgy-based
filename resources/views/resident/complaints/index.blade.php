@@ -24,6 +24,8 @@
         </div>
     </div>
 
+    @include('partials.status-legend', ['showPriority' => true])
+
     <div class="tabs">
         <a href="{{ $tabUrl('') }}" class="tab {{ $status === '' ? 'active' : '' }}">
             All <span class="count">{{ $counts['all'] }}</span>

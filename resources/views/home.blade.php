@@ -171,6 +171,20 @@
     </div>
 </section>
 
+{{-- ============ SECTION JUMP BAR ============
+     The landing page runs to eight sections, which is a lot of scrolling for
+     someone who has never seen it. This bar appears just under the hero, then
+     sticks below the site header so the rest of the page is one click away. --}}
+<nav class="jump-nav" aria-label="Jump to a section">
+    <span class="jump-label">Jump to</span>
+    <a href="#services"><x-icon name="grid" size="14" /> What you can do</a>
+    <a href="#how"><x-icon name="check-circle" size="14" /> How it works</a>
+    <a href="#announcements"><x-icon name="megaphone" size="14" /> Announcements</a>
+    <a href="#livelihood"><x-icon name="briefcase" size="14" /> Jobs</a>
+    <a href="#map"><x-icon name="map" size="14" /> Map</a>
+    <a href="#start"><x-icon name="plus" size="14" /> Get started</a>
+</nav>
+
 {{-- ============================= STATS ============================= --}}
 <section class="section tight">
     <div class="section-inner">
@@ -200,7 +214,7 @@
 </section>
 
 {{-- ============================= SERVICES ============================= --}}
-<section class="section">
+<section class="section" id="services">
     <div class="section-inner">
         <div class="section-head">
             <span class="eyebrow">What you can do here</span>
@@ -225,7 +239,7 @@
 </section>
 
 {{-- ============================= HOW IT WORKS ============================= --}}
-<section class="section" style="padding-top:0">
+<section class="section" id="how" style="padding-top:0">
     <div class="section-inner">
         <div class="section-head">
             <span class="eyebrow">How it works</span>
@@ -351,7 +365,7 @@
 </section>
 
 {{-- ============================= MAP + LOST & FOUND ============================= --}}
-<section class="section">
+<section class="section" id="map">
     <div class="section-inner">
         <div class="section-head">
             <span class="eyebrow">Know your barangay</span>
@@ -424,7 +438,7 @@
 </section>
 
 {{-- ============================= CTA BAND ============================= --}}
-<section class="section" style="padding-top:0">
+<section class="section" id="start" style="padding-top:0">
     <div class="section-inner">
         <div class="card cta-band">
             <span class="eyebrow">Ready when you are</span>

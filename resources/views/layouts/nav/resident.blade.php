@@ -48,13 +48,9 @@
         <x-icon name="briefcase" /> <span>Livelihood &amp; Jobs</span>
     </a>
 
-    <div class="nav-label">Tools</div>
-
+    {{-- The map plots community landmarks and resident reports, so it sits
+         with the rest of the community board rather than in its own group. --}}
     <a href="{{ route('resident.map.index') }}" class="nav-item {{ $active('resident.map.*') }}">
         <x-icon name="map" /> <span>Barangay Map</span>
-    </a>
-
-    <a href="{{ route('resident.profile.edit') }}" class="nav-item {{ $active('resident.profile.*') }}">
-        <x-icon name="user" /> <span>My profile</span>
     </a>
 </nav>

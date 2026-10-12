@@ -15,9 +15,12 @@
     </a>
 
     <div class="links">
-        <a href="{{ route('features') }}">Services</a>
-        <a href="#announcements">Announcements</a>
-        <a href="#livelihood">Livelihood</a>
+        {{-- In-page anchors are rooted at the home page, otherwise clicking
+             them from /services just appends a fragment to /services and
+             nothing moves - confusing for a first-time visitor. --}}
+        <a href="{{ route('home') }}#services">Services</a>
+        <a href="{{ route('home') }}#how">How it works</a>
+        <a href="{{ route('home') }}#announcements">Announcements</a>
         <a href="{{ route('login') }}">Sign in</a>
         <a href="{{ route('register') }}" class="btn btn-primary btn-sm">Create account</a>
     </div>

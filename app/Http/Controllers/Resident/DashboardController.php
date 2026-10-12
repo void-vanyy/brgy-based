@@ -46,6 +46,15 @@ class DashboardController extends Controller
             'motto' => Setting::get('barangay_motto', 'Malasakit, Serbisyo, Pagkakaisa.'),
         ];
 
+        /* A brand-new resident opens a dashboard where every tile is zero and
+           every list is empty. Without a word of orientation that reads as
+           "broken" rather than "unused", so the view uses this to lead with
+           a short how-to-start card instead of a wall of zeroes. */
+        $isFirstVisit = $myTicket === null
+            && ! Complaint::mine($id)->exists()
+            && ! DocumentRequest::where('user_id', $id)->exists()
+            && ! Appointment::where('user_id', $id)->exists();
+
         return view('resident.dashboard', [
             'user' => $user,
             'openComplaints' => $openComplaints,
@@ -53,6 +62,7 @@ class DashboardController extends Controller
             'upcomingAppointments' => $upcoming,
             'nextAppointment' => $upcoming->first(),
             'myTicket' => $myTicket,
+            'isFirstVisit' => $isFirstVisit,
             'announcements' => Announcement::published()->limit(5)->get(),
             'complaints' => Complaint::mine($id)->latest()->limit(3)->get(),
             'statuses' => ComplaintController::STATUSES,

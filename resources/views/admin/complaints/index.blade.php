@@ -33,6 +33,8 @@
         </div>
     </div>
 
+    @include('partials.status-legend', ['showPriority' => true])
+
     {{-- ============ status tabs ============ --}}
     <div class="tabs">
         <a href="{{ route('admin.complaints.index') }}" class="tab {{ ! in_array($currentStatus, array_keys($statusLabels), true) ? 'active' : '' }}">

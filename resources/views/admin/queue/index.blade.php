@@ -348,7 +348,9 @@
                 });
 
                 setText('boardNow', data.now_serving || '—');
-                setText('boardWin', data.window || 'No ticket called yet');
+                // A ticket on screen must not be paired with "No ticket called yet".
+                setText('boardWin', data.window
+                    || (data.now_serving ? 'Window not assigned' : 'No ticket called yet'));
                 setText('boardServed', done);
                 setText('boardSkipped', skipped);
                 refreshCounts(waiting, active);

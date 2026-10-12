@@ -28,6 +28,48 @@
     </div>
 
     {{-- ============ at a glance ============ --}}
+    {{-- ============ first visit: say where to start before showing zeroes ============ --}}
+    @if ($isFirstVisit ?? false)
+        <section class="welcome">
+            <span class="eyebrow">First time here</span>
+            <h2>Three steps, and you are done.</h2>
+            <p>
+                Your dashboard is empty because you have not filed anything yet — not because
+                something is wrong. Start with whatever brought you to the barangay today.
+            </p>
+
+            <div class="welcome-track">
+                <div class="welcome-step">
+                    <span class="n">STEP 01</span>
+                    <strong>Send your request</strong>
+                    <span>File a complaint, ask for a certificate or book a slot. You get a reference number the moment you submit.</span>
+                </div>
+                <div class="welcome-step">
+                    <span class="n">STEP 02</span>
+                    <strong>Watch it move</strong>
+                    <span>Every status change appears on your tracker here, so there is no need to call or line up to follow up.</span>
+                </div>
+                <div class="welcome-step">
+                    <span class="n">STEP 03</span>
+                    <strong>Come in when it is ready</strong>
+                    <span>Take a queue number from home and arrive only when your turn is close.</span>
+                </div>
+            </div>
+
+            <div class="welcome-actions">
+                <a href="{{ route('resident.complaints.create') }}" class="btn btn-primary">
+                    <x-icon name="plus" /> File a complaint
+                </a>
+                <a href="{{ route('resident.documents.create') }}" class="btn btn-ghost">
+                    <x-icon name="file" /> Request a certificate
+                </a>
+                <a href="{{ route('resident.appointments.create') }}" class="btn btn-ghost">
+                    <x-icon name="calendar" /> Book a slot
+                </a>
+            </div>
+        </section>
+    @endif
+
     <div class="stats">
         <div class="stat tone-cyan">
             <div class="stat-label">Open complaints</div>
