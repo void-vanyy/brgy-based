@@ -87,6 +87,9 @@ Route::prefix('resident')->name('resident.')->middleware(['auth', 'role:resident
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin,staff,city_admin'])->group(function () {
     Route::get('/', [Admin\DashboardController::class, 'index'])->name('dashboard');
 
+    /* City-office only: one section per barangay across all 18. */
+    Route::get('barangays', [Admin\BarangayController::class, 'index'])->name('barangays.index');
+
     Route::get('complaints', [Admin\ComplaintController::class, 'index'])->name('complaints.index');
     Route::get('complaints/{complaint}', [Admin\ComplaintController::class, 'show'])->name('complaints.show');
     Route::patch('complaints/{complaint}', [Admin\ComplaintController::class, 'update'])->name('complaints.update');

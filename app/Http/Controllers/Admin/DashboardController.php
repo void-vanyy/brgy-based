@@ -11,6 +11,7 @@ use App\Models\DocumentRequest;
 use App\Models\Job;
 use App\Models\QueueTicket;
 use App\Models\User;
+use App\Support\CityBreakdown;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
@@ -86,10 +87,28 @@ class DashboardController extends Controller
             ->whereIn('status', ['received', 'in_progress', 'on_hold'])
             ->count();
 
+        /* A city admin's headline numbers are a flat sum across 18 barangays,
+           which hides where the work actually is. The pulse strip breaks that
+           sum back down so a heavy barangay is visible without leaving the
+           dashboard. Barangay officials already see one barangay, so for them
+           this is just their own board and is skipped. */
+        $cityPulse = null;
+
+        if ($this->seesEveryBarangay()) {
+            $breakdown = CityBreakdown::perBarangay();
+
+            $cityPulse = [
+                'rows'    => $breakdown->take(6)->values(),
+                'maxOpen' => CityBreakdown::maxOpen($breakdown),
+                'totals'  => CityBreakdown::totals($breakdown),
+            ];
+        }
+
         return view('admin.dashboard', [
             'bars' => $bars,
             'peakBar' => $peakBar,
             'total' => $total,
+            'cityPulse' => $cityPulse,
             'scopeLabel' => $this->scopeLabel(),
             'stats' => [
                 [

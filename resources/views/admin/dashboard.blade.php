@@ -17,23 +17,86 @@
             'label' => $statusLabels['received'] ?? 'Received',
             'count' => 0,
         ];
+
+        /* The city office runs 18 barangays, so its dashboard leads with the
+           city; a barangay official leads with their own barangay. */
+        $cityPulse = $cityPulse ?? null;
+        $isCityWide = $cityPulse !== null;
     @endphp
 
     <div class="page-head">
         <div>
             <span class="eyebrow">Command centre</span>
-            <h1>Barangay overview</h1>
-            <p class="sub">Live snapshot of cases, transactions and the queue — {{ now()->format('l, F j, Y') }}.</p>
+            <h1>{{ $isCityWide ? 'City overview' : 'Barangay overview' }}</h1>
+            <p class="sub">
+                @if ($isCityWide)
+                    All 18 barangays at a glance — {{ now()->format('l, F j, Y') }}.
+                @else
+                    Live snapshot of cases, transactions and the queue — {{ now()->format('l, F j, Y') }}.
+                @endif
+            </p>
         </div>
         <div class="row">
             <a href="{{ route('admin.queue.index') }}" class="btn">
                 <x-icon name="ticket" size="16" /> Queue board
             </a>
+            @if ($isCityWide)
+                <a href="{{ route('admin.barangays.index') }}" class="btn">
+                    <x-icon name="map" size="16" /> All barangays
+                </a>
+            @endif
             <a href="{{ route('admin.announcements.create') }}" class="btn btn-primary">
                 <x-icon name="plus" size="16" /> New announcement
             </a>
         </div>
     </div>
+
+    {{-- ============ city pulse (city admin only) ============ --}}
+    @if ($isCityWide)
+        <section class="card mb-3">
+            <div class="card-head">
+                <h2 class="card-title"><x-icon name="chart" /> Where the work is</h2>
+                <a href="{{ route('admin.barangays.index') }}" class="tiny">View all 18 &rarr;</a>
+            </div>
+            <div class="card-body">
+                @php ($busiest = $cityPulse['rows']->first())
+                @if (($cityPulse['totals']['open'] ?? 0) === 0)
+                    <p class="dim mb-0">No open cases in any barangay right now.</p>
+                @else
+                    <p class="small dim">
+                        <strong style="color:var(--text)">{{ $busiest['name'] }}</strong>
+                        carries the most with {{ $busiest['open'] }} open {{ \Illuminate\Support\Str::plural('case', $busiest['open']) }}.
+                    </p>
+
+                    <div class="stack" style="gap:.55rem">
+                        @foreach ($cityPulse['rows'] as $pulse)
+                            @if ($pulse['open'] === 0 && $pulse['docs'] === 0 && $pulse['waiting'] === 0)
+                                @continue
+                            @endif
+                            <a href="{{ route('admin.complaints.index', ['barangay' => $pulse['id']]) }}"
+                               class="row between items-center"
+                               style="text-decoration:none;padding:.3rem 0">
+                                <span class="row gap-1" style="min-width:8.5rem">
+                                    <span class="tiny bold" style="color:var(--text)">{{ $pulse['name'] }}</span>
+                                    @if ($pulse['urgent'] > 0)
+                                        <span class="badge badge-rose">{{ $pulse['urgent'] }} urgent</span>
+                                    @endif
+                                </span>
+                                <span class="grow" style="display:flex;align-items:center;gap:.6rem;margin-left:.6rem">
+                                    <span style="flex:1;height:7px;border-radius:99px;background:var(--border);overflow:hidden">
+                                        <span style="display:block;height:100%;width:{{ (int) round($pulse['open'] / $cityPulse['maxOpen'] * 100) }}%;background:var(--accent)"></span>
+                                    </span>
+                                    <span class="tiny mono dim" style="width:10.5rem;text-align:right;white-space:nowrap">
+                                        {{ $pulse['open'] }} open &middot; {{ $pulse['docs'] }} docs &middot; {{ $pulse['waiting'] }} queue
+                                    </span>
+                                </span>
+                            </a>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+        </section>
+    @endif
 
     {{-- ============ headline numbers ============ --}}
     <div class="stats mb-3">

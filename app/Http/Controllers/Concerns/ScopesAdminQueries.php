@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Concerns;
 
+use App\Models\Barangay;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -50,6 +51,31 @@ trait ScopesAdminQueries
     }
 
     /**
+     * A city admin may narrow the whole console to one barangay with
+     * ?barangay=<id> - that is how the Barangays overview drills down into a
+     * single board.
+     *
+     * This is deliberately unreachable for a barangay official: their scope is
+     * fixed by their own record, and effectiveBarangayId() returns that first,
+     * so a crafted query string can never widen what they are allowed to see.
+     */
+    protected function requestedBarangayId(): ?int
+    {
+        return $this->seesEveryBarangay()
+            ? Barangay::requestedFilterId()
+            : null;
+    }
+
+    /**
+     * The barangay actually in force on this request: an official's own scope
+     * if they have one, otherwise a city admin's ?barangay= filter.
+     */
+    protected function effectiveBarangayId(): ?int
+    {
+        return $this->scopeBarangayId() ?? $this->requestedBarangayId();
+    }
+
+    /**
      * Human-readable name of the scope in force, for the admin header, so an
      * official always knows which barangay's data is on screen.
      */
@@ -57,11 +83,18 @@ trait ScopesAdminQueries
     {
         $user = auth()->user();
 
-        if ($this->seesEveryBarangay()) {
-            return 'All 18 barangays — Santa Rosa City';
+        if ($this->scopeBarangayId() !== null) {
+            return $user?->barangay?->name ?? 'Unassigned barangay';
         }
 
-        return $user?->barangay?->name ?? 'Unassigned barangay';
+        $requested = $this->requestedBarangayId();
+
+        if ($requested !== null) {
+            return Barangay::query()->whereKey($requested)->value('name')
+                ?? 'All 18 barangays — Santa Rosa City';
+        }
+
+        return 'All 18 barangays — Santa Rosa City';
     }
 
     /**
@@ -69,7 +102,7 @@ trait ScopesAdminQueries
      */
     protected function scoped(Builder $query, string $column = 'barangay_id'): Builder
     {
-        $id = $this->scopeBarangayId();
+        $id = $this->effectiveBarangayId();
 
         return $id === null ? $query : $query->where($column, $id);
     }
@@ -80,7 +113,7 @@ trait ScopesAdminQueries
      */
     protected function scopedVisible(Builder $query, string $column = 'barangay_id'): Builder
     {
-        $id = $this->scopeBarangayId();
+        $id = $this->effectiveBarangayId();
 
         if ($id === null) {
             return $query;
@@ -97,7 +130,7 @@ trait ScopesAdminQueries
      */
     protected function scopedByResident(Builder $query, string $relation = 'resident'): Builder
     {
-        $id = $this->scopeBarangayId();
+        $id = $this->effectiveBarangayId();
 
         if ($id === null) {
             return $query;
