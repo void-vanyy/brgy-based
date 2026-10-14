@@ -6,6 +6,7 @@ use App\Http\Controllers\Concerns\RendersStatusPatches;
 use App\Http\Controllers\Concerns\ScopesAdminQueries;
 use App\Http\Controllers\Controller;
 use App\Models\DocumentRequest;
+use App\Models\Setting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -59,6 +60,29 @@ class DocumentRequestController extends Controller
             'docRequest' => $documentRequest,
             'statuses' => DocumentRequest::STATUSES,
             'types' => DocumentRequest::TYPES,
+        ]);
+    }
+
+    /**
+     * The actual certificate the counter prints once a request is approved.
+     *
+     * Reuses the resident view so the paper the records desk prints and the
+     * paper the resident prints from home can never drift apart.
+     */
+    public function certificate(DocumentRequest $documentRequest): View|RedirectResponse
+    {
+        $this->guardInScope($documentRequest);
+
+        if (! $documentRequest->isPrintable()) {
+            return redirect()
+                ->route('admin.requests.show', $documentRequest)
+                ->with('error', 'A certificate is generated once the request is approved.');
+        }
+
+        return view('resident.documents.certificate', [
+            'document' => $documentRequest->load(['resident.barangay', 'processor:id,name']),
+            'settings' => Setting::kv(),
+            'portal' => 'admin',
         ]);
     }
 

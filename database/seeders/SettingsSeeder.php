@@ -22,7 +22,7 @@ class SettingsSeeder extends Seeder
             'barangay_name'    => 'Santa Rosa City',
             'barangay_address' => 'City Hall Complex, Rizal Boulevard, Poblacion, Santa Rosa City, Laguna 4026',
             'barangay_contact' => '(049) 534-3000 / eservices@santrosacity.gov.ph',
-            'barangay_capain'  => 'Hon. Celeste A. Ocampo, City Administrator',
+            'barangay_capain'  => 'Hon. Rodrigo M. Bautista',
             'barangay_motto'   => 'Makabuluhan, Mapagkalinga, Magkaisa.',
         ];
 

@@ -34,9 +34,17 @@
             </p>
         </div>
         <div class="row">
-            <button class="btn btn-ghost" type="button" onclick="window.print()">
-                <x-icon name="printer" size="16" /> Print
-            </button>
+            @if ($document->isPrintable())
+                {{-- Once approved the request has an actual document behind it, so
+                     that - not the tracking page - is what this prints. --}}
+                <a href="{{ route('resident.documents.certificate', $document) }}" class="btn btn-primary">
+                    <x-icon name="printer" size="16" /> Print certificate
+                </a>
+            @else
+                <button class="btn btn-ghost" type="button" onclick="window.print()">
+                    <x-icon name="printer" size="16" /> Print
+                </button>
+            @endif
             <a href="{{ route('resident.documents.index') }}" class="btn btn-ghost">
                 <x-icon name="chevron" size="14" /> All requests
             </a>

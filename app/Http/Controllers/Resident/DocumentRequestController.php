@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Resident;
 
 use App\Http\Controllers\Controller;
 use App\Models\DocumentRequest;
+use App\Models\Setting;
 use App\Support\DocumentFee;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -79,6 +80,30 @@ class DocumentRequestController extends Controller
 
         return view('resident.documents.show', [
             'document' => $documentRequest,
+        ]);
+    }
+
+    /**
+     * The certificate itself - the paper the reference number stands for.
+     *
+     * Only served once the records desk has approved the request: printing an
+     * unapproved clearance would hand a resident a document that asserts
+     * something the barangay has not confirmed.
+     */
+    public function certificate(DocumentRequest $documentRequest): View|RedirectResponse
+    {
+        abort_unless($documentRequest->user_id === auth()->id(), 403);
+
+        if (! $documentRequest->isPrintable()) {
+            return redirect()
+                ->route('resident.documents.show', $documentRequest)
+                ->with('error', 'Your certificate is generated once the request is approved.');
+        }
+
+        return view('resident.documents.certificate', [
+            'document' => $documentRequest->load(['resident.barangay', 'processor:id,name']),
+            'settings' => Setting::kv(),
+            'portal' => 'resident',
         ]);
     }
 }

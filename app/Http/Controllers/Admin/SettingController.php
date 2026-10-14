@@ -48,9 +48,9 @@ class SettingController extends Controller
             'placeholder' => '(049) 534-3000 / eservices@santrosacity.gov.ph',
         ],
         'barangay_capain' => [
-            'label' => 'City Administrator',
-            'hint' => 'Caption shown beside the seal.',
-            'placeholder' => 'Hon. Celeste A. Ocampo, City Administrator',
+            'label' => 'Punong Barangay',
+            'hint' => 'Printed as the signatory on certificates and other documents this office issues.',
+            'placeholder' => 'Hon. Rodrigo M. Bautista',
         ],
         'barangay_motto' => [
             'label' => 'Motto',

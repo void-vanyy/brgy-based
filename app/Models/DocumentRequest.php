@@ -51,6 +51,13 @@ class DocumentRequest extends Model
         'rejected' => 'Rejected',
     ];
 
+    /**
+     * Statuses at which the document exists as an issued paper and may be
+     * printed. Anything earlier is still being processed, so a printed copy
+     * would assert something the records desk has not yet approved.
+     */
+    public const PRINTABLE = ['approved', 'ready_for_release', 'released'];
+
     /** Badge class per status - shared by the board, the detail page and the
      *  ajax patch that rewrites either of them in place. */
     public const STATUS_BADGES = [
@@ -80,6 +87,12 @@ class DocumentRequest extends Model
     public function statusLabel(): string
     {
         return self::STATUSES[$this->status] ?? ucfirst($this->status);
+    }
+
+    /** Whether the paperwork behind this request exists and may be printed. */
+    public function isPrintable(): bool
+    {
+        return in_array($this->status, self::PRINTABLE, true);
     }
 
     /**

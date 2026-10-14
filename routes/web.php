@@ -53,6 +53,7 @@ Route::prefix('resident')->name('resident.')->middleware(['auth', 'role:resident
     Route::get('documents/create', [Resident\DocumentRequestController::class, 'create'])->name('documents.create');
     Route::post('documents', [Resident\DocumentRequestController::class, 'store'])->name('documents.store');
     Route::get('documents/{documentRequest}', [Resident\DocumentRequestController::class, 'show'])->name('documents.show');
+    Route::get('documents/{documentRequest}/certificate', [Resident\DocumentRequestController::class, 'certificate'])->name('documents.certificate');
 
     Route::get('appointments', [Resident\AppointmentController::class, 'index'])->name('appointments.index');
     Route::get('appointments/create', [Resident\AppointmentController::class, 'create'])->name('appointments.create');
@@ -104,6 +105,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin,staff,ci
     Route::get('requests', [Admin\DocumentRequestController::class, 'index'])->name('requests.index');
     Route::get('requests/{documentRequest}', [Admin\DocumentRequestController::class, 'show'])->name('requests.show');
     Route::patch('requests/{documentRequest}', [Admin\DocumentRequestController::class, 'update'])->name('requests.update');
+    Route::get('requests/{documentRequest}/certificate', [Admin\DocumentRequestController::class, 'certificate'])->name('requests.certificate');
 
     Route::get('appointments', [Admin\AppointmentController::class, 'index'])->name('appointments.index');
     Route::patch('appointments/{appointment}', [Admin\AppointmentController::class, 'update'])->name('appointments.update');

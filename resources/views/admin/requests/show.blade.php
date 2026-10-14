@@ -30,6 +30,13 @@
                     'remark' => null,
                 ])
             </span>
+            @if ($docRequest->isPrintable())
+                {{-- The paper the counter hands over. The resident can print the
+                     same document from home - both render one shared view. --}}
+                <a href="{{ route('admin.requests.certificate', $docRequest) }}" class="btn btn-primary">
+                    <x-icon name="printer" size="15" /> Print certificate
+                </a>
+            @endif
             <a href="{{ route('admin.requests.index') }}" class="btn btn-ghost">
                 <x-icon name="chevron" size="15" /> Back to queue
             </a>
