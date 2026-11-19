@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Concerns\RendersStatusPatches;
 use App\Http\Controllers\Concerns\ScopesAdminQueries;
 use App\Http\Controllers\Controller;
+use App\Models\Barangay;
 use App\Models\User;
+use App\Support\BarangayFilter;
+use App\Support\PasswordPolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -92,6 +95,62 @@ class UserController extends Controller
             ],
             'scopeLabel' => $this->scopeLabel(),
         ]);
+    }
+
+    /**
+     * The form for a new barangay account.
+     *
+     * Only barangay-bound officer accounts are made here: residents get their
+     * accounts through registration, and an existing row changes role in the
+     * Manage modal, so role is deliberately not a field on this form. The
+     * barangay select opens on whatever the console is showing, which is the
+     * officer's own barangay unless they widened the filter first.
+     */
+    public function create(): View
+    {
+        return view('admin.users.create', [
+            'barangays' => Barangay::query()->active()->ordered()->get(),
+            'defaultBarangayId' => BarangayFilter::current() ?? BarangayFilter::home(),
+        ]);
+    }
+
+    /**
+     * Create the account.
+     *
+     * The role is written here rather than offered on the form because
+     * 'city_admin' is the only value that should ever be assigned to a new row
+     * (see User::OFFICIAL_ROLES) - and the barangay it is bound to is exactly
+     * what makes this a barangay account instead of a city-wide one.
+     */
+    public function store(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'min:2', 'max:120'],
+            'email' => ['required', 'email', 'max:190', 'unique:users,email'],
+            'barangay_id' => [
+                'required',
+                'integer',
+                Rule::exists('barangays', 'id')->where('is_active', true),
+            ],
+            'password' => PasswordPolicy::requiredRules($request),
+        ], [
+            'email.unique' => 'An account with that e-mail address already exists.',
+            'barangay_id.required' => 'Please choose the barangay this account belongs to.',
+            'barangay_id.exists' => 'That barangay is not part of this city.',
+        ] + PasswordPolicy::messages());
+
+        $user = User::create([
+            'name' => trim($data['name']),
+            'email' => strtolower(trim($data['email'])),
+            'password' => $data['password'],
+            'role' => 'city_admin',
+            'barangay_id' => (int) $data['barangay_id'],
+            'status' => 'active',
+        ]);
+
+        return redirect()
+            ->route('admin.users.index')
+            ->with('success', $user->name.' was added to '.$user->barangay->name.'.');
     }
 
     public function update(Request $request, User $user): RedirectResponse|JsonResponse

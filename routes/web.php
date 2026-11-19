@@ -131,6 +131,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:official'])->g
     Route::resource('jobs', Admin\JobController::class)->except(['show']);
 
     Route::get('users', [Admin\UserController::class, 'index'])->name('users.index');
+    Route::get('users/create', [Admin\UserController::class, 'create'])->name('users.create');
+    Route::post('users', [Admin\UserController::class, 'store'])->name('users.store');
     Route::patch('users/{user}', [Admin\UserController::class, 'update'])->name('users.update');
     Route::delete('users/{user}', [Admin\UserController::class, 'destroy'])->name('users.destroy');
 

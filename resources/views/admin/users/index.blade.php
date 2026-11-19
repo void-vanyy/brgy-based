@@ -1,4 +1,4 @@
-?@php
+@php
     $portal = 'admin';
 @endphp
 @extends('layouts.portal')
@@ -29,6 +29,11 @@
         </div>
         <div class="row">
             <span class="badge badge-rose">{{ $counts['suspended'] }} suspended</span>
+            {{-- BarangayFilter::params() keeps the barangay currently on screen,
+                 so the form that opens is pre-set to it. --}}
+            <a href="{{ route('admin.users.create', \App\Support\BarangayFilter::params()) }}" class="btn btn-primary">
+                <x-icon name="plus" size="16" /> New barangay account
+            </a>
         </div>
     </div>
 
@@ -80,6 +85,9 @@
                 {{-- The toolbar above already shows Reset whenever a filter is
                      active; a second link to the same place here was the third
                      control doing one job on this page. --}}
+                <a href="{{ route('admin.users.create', \App\Support\BarangayFilter::params()) }}" class="btn btn-primary btn-sm">
+                    <x-icon name="plus" size="15" /> New barangay account
+                </a>
             </div>
         @else
             <div class="table-wrap">
